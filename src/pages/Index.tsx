@@ -2,11 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const CLIENT_ID = "2c3a8b96"; // Jamendo API client ID
-
 async function fetchTrendingTracks() {
   const response = await fetch(
-    `https://api.jamendo.com/v3.0/tracks/?client_id=${CLIENT_ID}&format=json&limit=20&orderby=popularity_total`,
+    "https://saavn.me/modules?language=hindi,english"
   );
   
   if (!response.ok) {
@@ -14,7 +12,7 @@ async function fetchTrendingTracks() {
   }
   
   const data = await response.json();
-  return data.results;
+  return data.data.trending.songs || [];
 }
 
 const Index = () => {
@@ -46,22 +44,22 @@ const Index = () => {
 
   return (
     <div className="p-8 pb-32">
-      <h1 className="text-3xl font-bold mb-6">Trending Now</h1>
+      <h1 className="text-3xl font-bold mb-6">Trending Hindi & English Songs</h1>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {tracks?.map((track: any) => (
           <Card key={track.id} className="group hover:bg-secondary/50 transition-colors">
             <div className="p-4">
               <img
-                src={track.image}
+                src={track.image[2].link}
                 alt={track.name}
                 className="w-full aspect-square object-cover rounded-md mb-4"
               />
               <h3 className="font-medium truncate">{track.name}</h3>
               <p className="text-sm text-muted-foreground truncate">
-                {track.artist_name}
+                {track.primaryArtists}
               </p>
               <audio 
-                src={track.audio} 
+                src={track.downloadUrl[4].link} 
                 className="w-full mt-4" 
                 controls
               />
