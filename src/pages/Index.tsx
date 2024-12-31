@@ -21,7 +21,16 @@ async function fetchTrendingTracks() {
     throw new Error('Invalid data format received from API');
   }
   
-  return data.data.albums || [];
+  // Ensure we're returning an array and that each item has the required properties
+  return data.data.albums.filter((album: any) => 
+    album && 
+    album.downloadUrl && 
+    Array.isArray(album.downloadUrl) && 
+    album.downloadUrl.length > 0 &&
+    album.image && 
+    Array.isArray(album.image) && 
+    album.image.length > 1
+  );
 }
 
 const Index = () => {
@@ -52,15 +61,28 @@ const Index = () => {
     );
   }
 
+  if (!Array.isArray(tracks) || tracks.length === 0) {
+    return (
+      <div className="p-8">
+        <Alert className="max-w-2xl mb-6">
+          <AlertTitle className="text-lg">No Tracks Found</AlertTitle>
+          <AlertDescription>
+            No music tracks are currently available. Please try again later.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 pb-32">
       <h1 className="text-3xl font-bold mb-6">Trending Hindi & English Songs</h1>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {tracks?.map((track: any) => (
+        {tracks.map((track: any) => (
           <Card key={track.id} className="group hover:bg-secondary/50 transition-colors">
             <div className="p-4">
               <img
-                src={track.image[2].link}
+                src={track.image[2]?.link || track.image[0]?.link}
                 alt={track.name}
                 className="w-full aspect-square object-cover rounded-md mb-4"
               />
@@ -68,11 +90,13 @@ const Index = () => {
               <p className="text-sm text-muted-foreground truncate">
                 {track.primaryArtists}
               </p>
-              <audio 
-                src={track.downloadUrl[4].link} 
-                className="w-full mt-4" 
-                controls
-              />
+              {track.downloadUrl && track.downloadUrl.length > 0 && (
+                <audio 
+                  src={track.downloadUrl[track.downloadUrl.length - 1]?.link || track.downloadUrl[0]?.link} 
+                  className="w-full mt-4" 
+                  controls
+                />
+              )}
             </div>
           </Card>
         ))}
