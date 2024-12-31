@@ -15,6 +15,12 @@ async function fetchTrendingTracks() {
   }
   
   const data = await response.json();
+  console.log("API Response:", data); // Debug log
+  
+  if (!data.data) {
+    throw new Error('Invalid data format received from API');
+  }
+  
   return data.data || [];
 }
 
@@ -33,6 +39,7 @@ const Index = () => {
   }
 
   if (error) {
+    console.error("Error fetching tracks:", error); // Debug log
     return (
       <div className="p-8">
         <Alert className="max-w-2xl mb-6">
