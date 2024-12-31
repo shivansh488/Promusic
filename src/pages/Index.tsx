@@ -17,11 +17,11 @@ async function fetchTrendingTracks() {
   const data = await response.json();
   console.log("API Response:", data); // Debug log
   
-  if (!data.data) {
+  if (!data.data?.albums) {
     throw new Error('Invalid data format received from API');
   }
   
-  return data.data || [];
+  return data.data.albums || [];
 }
 
 const Index = () => {
