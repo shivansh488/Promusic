@@ -1,14 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 
+const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+
 async function fetchTrendingTracks() {
-  const response = await fetch("https://api.deezer.com/chart/0/tracks?limit=20");
+  const response = await fetch(
+    `${CORS_PROXY}https://api.deezer.com/chart/0/tracks?limit=20`,
+    {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    }
+  );
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
   const data = await response.json();
   return data.data;
 }
 
 const Index = () => {
-  const { data: tracks, isLoading } = useQuery({
+  const { data: tracks, isLoading, error } = useQuery({
     queryKey: ["trending-tracks"],
     queryFn: fetchTrendingTracks,
   });
@@ -17,6 +29,15 @@ const Index = () => {
     return (
       <div className="p-8">
         <h1 className="text-3xl font-bold mb-6">Loading...</h1>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <h1 className="text-3xl font-bold mb-6">Error loading tracks</h1>
+        <p className="text-red-500">{(error as Error).message}</p>
       </div>
     );
   }
