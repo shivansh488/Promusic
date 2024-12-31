@@ -4,7 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 async function fetchTrendingTracks() {
   const response = await fetch(
-    "https://jiosaavn-api-privatecvc2.vercel.app/trending/songs",
+    "https://jiosaavn-api-privatecvc2.vercel.app/modules?language=hindi,english",
     {
       method: 'GET',
     }
