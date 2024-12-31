@@ -4,11 +4,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 async function fetchTrendingTracks() {
   const response = await fetch(
-    "https://saavn.me/modules?language=hindi,english",
+    "https://jiosaavn-api-privatecvc2.vercel.app/trending/songs",
     {
-      headers: {
-        'Origin': 'https://saavn.me'
-      }
+      method: 'GET',
     }
   );
   
@@ -17,7 +15,7 @@ async function fetchTrendingTracks() {
   }
   
   const data = await response.json();
-  return data.data.trending.songs || [];
+  return data.data || [];
 }
 
 const Index = () => {
