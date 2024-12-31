@@ -88,7 +88,9 @@ const Index = () => {
               />
               <h3 className="font-medium truncate">{track.name}</h3>
               <p className="text-sm text-muted-foreground truncate">
-                {track.primaryArtists}
+                {Array.isArray(track.primaryArtists) 
+                  ? track.primaryArtists.map(artist => artist.name).join(", ")
+                  : "Unknown Artist"}
               </p>
               {track.downloadUrl && track.downloadUrl.length > 0 && (
                 <audio 
