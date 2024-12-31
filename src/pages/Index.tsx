@@ -4,7 +4,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 async function fetchTrendingTracks() {
   const response = await fetch(
-    "https://saavn.me/modules?language=hindi,english"
+    "https://saavn.me/modules?language=hindi,english",
+    {
+      headers: {
+        'Origin': 'https://saavn.me'
+      }
+    }
   );
   
   if (!response.ok) {
