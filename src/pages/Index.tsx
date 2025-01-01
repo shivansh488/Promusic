@@ -15,9 +15,8 @@ async function fetchTrendingTracks() {
   }
   
   const data = await response.json();
-  console.log("API Response:", data); // Debug log
+  console.log("API Response:", data);
   
-  // Check if data exists and has the expected structure
   if (!data?.data?.trending?.albums) {
     throw new Error('Invalid data format received from API');
   }
@@ -81,14 +80,15 @@ const Index = () => {
               <h3 className="font-medium truncate">{track.name}</h3>
               <p className="text-sm text-muted-foreground truncate">
                 {Array.isArray(track.primaryArtists) 
-                  ? track.primaryArtists.map(artist => artist.name).join(", ")
+                  ? track.primaryArtists.map((artist: any) => artist.name).join(", ")
                   : "Unknown Artist"}
               </p>
-              {track.downloadUrl && track.downloadUrl.length > 0 && (
+              {track.downloadUrl && (
                 <audio 
-                  src={track.downloadUrl[track.downloadUrl.length - 1]?.link || track.downloadUrl[0]?.link} 
+                  src={track.downloadUrl[4]?.link || track.downloadUrl[0]?.link} 
                   className="w-full mt-4" 
                   controls
+                  preload="none"
                 />
               )}
             </div>
