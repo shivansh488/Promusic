@@ -7,6 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { MusicSidebar } from "@/components/MusicSidebar";
 import { Player } from "@/components/Player";
 import Index from "./pages/Index";
+import { AudioProvider } from "@/contexts/AudioContext";
 
 const queryClient = new QueryClient();
 
@@ -17,15 +18,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <SidebarProvider>
-          <div className="min-h-screen flex w-full">
-            <MusicSidebar />
-            <main className="flex-1">
-              <Routes>
-                <Route path="/" element={<Index />} />
-              </Routes>
-            </main>
-            <Player />
-          </div>
+          <AudioProvider>
+            <div className="min-h-screen flex w-full">
+              <MusicSidebar />
+              <main className="flex-1">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                </Routes>
+              </main>
+              <Player />
+            </div>
+          </AudioProvider>
         </SidebarProvider>
       </BrowserRouter>
     </TooltipProvider>
