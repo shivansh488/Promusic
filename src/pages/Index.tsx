@@ -17,20 +17,12 @@ async function fetchTrendingTracks() {
   const data = await response.json();
   console.log("API Response:", data); // Debug log
   
-  if (!data.data?.albums) {
+  // Check if data exists and has the expected structure
+  if (!data?.data?.trending?.albums) {
     throw new Error('Invalid data format received from API');
   }
   
-  // Ensure we're returning an array and that each item has the required properties
-  return data.data.albums.filter((album: any) => 
-    album && 
-    album.downloadUrl && 
-    Array.isArray(album.downloadUrl) && 
-    album.downloadUrl.length > 0 &&
-    album.image && 
-    Array.isArray(album.image) && 
-    album.image.length > 1
-  );
+  return data.data.trending.albums;
 }
 
 const Index = () => {
@@ -48,7 +40,7 @@ const Index = () => {
   }
 
   if (error) {
-    console.error("Error fetching tracks:", error); // Debug log
+    console.error("Error fetching tracks:", error);
     return (
       <div className="p-8">
         <Alert className="max-w-2xl mb-6">
@@ -82,7 +74,7 @@ const Index = () => {
           <Card key={track.id} className="group hover:bg-secondary/50 transition-colors">
             <div className="p-4">
               <img
-                src={track.image[2]?.link || track.image[0]?.link}
+                src={track.image?.[2]?.link || track.image?.[0]?.link}
                 alt={track.name}
                 className="w-full aspect-square object-cover rounded-md mb-4"
               />
