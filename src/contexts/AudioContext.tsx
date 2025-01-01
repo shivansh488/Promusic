@@ -1,119 +1,159 @@
-import React, { createContext, useContext, useState, useRef } from "react";
+import React, { createContext, useContext, useState, useRef, useCallback } from "react";
+
+type Track = {
+  id: string;
+  name: string;
+  primaryArtists: string;
+  downloadUrl: { link: string }[];
+  image: { link: string }[];
+};
+
+type Album = {
+  id: string;
+  name: string;
+  songs: Track[];
+  image: { link: string }[];
+};
 
 type AudioContextType = {
-  currentTrack: any;
+  currentTrack: Track | null;
   isPlaying: boolean;
-  playTrack: (track: any) => void;
-  pauseTrack: () => void;
   togglePlay: () => void;
-  setProgress: (value: number) => void;
   progress: number;
   duration: number;
   volume: number;
-  setVolume: (value: number) => void;
+  setVolume: (volume: number) => void;
+  playTrack: (track: Track, album?: Album) => void;
+  nextTrack: () => void;
+  previousTrack: () => void;
 };
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const [currentTrack, setCurrentTrack] = useState<any>(null);
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, updateProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(100);
+  const [volume, setVolume] = useState(1);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  React.useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      const handleError = (e: Event) => {
-        console.error('Audio playback error:', e);
-        setIsPlaying(false);
-      };
-  
-      const handleEnded = () => {
-        setIsPlaying(false);
-        updateProgress(0);
-      };
+  const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(-1);
 
-      audio.addEventListener('error', handleError);
-      audio.addEventListener('ended', handleEnded);
-  
-      return () => {
-        audio.removeEventListener('error', handleError);
-        audio.removeEventListener('ended', handleEnded);
-      };
+  const togglePlay = useCallback(() => {
+    if (!currentTrack) return;
+    
+    if (isPlaying) {
+      audioRef.current?.pause();
+    } else {
+      audioRef.current?.play();
     }
-  }, []);
+    setIsPlaying(!isPlaying);
+  }, [isPlaying, currentTrack]);
 
-  const playTrack = (track: any) => {
+  const playTrack = useCallback((track: Track, album?: Album) => {
     if (currentTrack?.id === track.id) {
       togglePlay();
       return;
     }
-    
     setCurrentTrack(track);
-    setIsPlaying(true);
-    if (audioRef.current) {
-      audioRef.current.src = track.downloadUrl[4]?.link || track.downloadUrl[0]?.link;
-      audioRef.current.play();
-    }
-  };
-
-  const pauseTrack = () => {
-    setIsPlaying(false);
-    audioRef.current?.pause();
-  };
-
-  const togglePlay = () => {
-    if (isPlaying) {
-      pauseTrack();
+    if (album) {
+      setCurrentAlbum(album);
+      const index = album.songs.findIndex((song) => song.id === track.id);
+      setCurrentIndex(index);
     } else {
-      setIsPlaying(true);
-      audioRef.current?.play();
+      // If no album is provided, treat the track as a single song
+      setCurrentAlbum({ id: track.id, name: track.name, songs: [track], image: track.image });
+      setCurrentIndex(0);
     }
-  };
+    setIsPlaying(true);
+  }, [currentTrack, togglePlay]);
+
+  const nextTrack = useCallback(() => {
+    if (!currentAlbum || currentIndex === -1) return;
+    
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < currentAlbum.songs.length) {
+      setCurrentIndex(nextIndex);
+      setCurrentTrack(currentAlbum.songs[nextIndex]);
+      setIsPlaying(true);
+    }
+  }, [currentAlbum, currentIndex]);
+
+  const previousTrack = useCallback(() => {
+    if (!currentAlbum || currentIndex === -1) return;
+    
+    const prevIndex = currentIndex - 1;
+    if (prevIndex >= 0) {
+      setCurrentIndex(prevIndex);
+      setCurrentTrack(currentAlbum.songs[prevIndex]);
+      setIsPlaying(true);
+    }
+  }, [currentAlbum, currentIndex]);
+
+  React.useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.volume = volume;
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, [volume]);
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
       updateProgress(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
       setDuration(audioRef.current.duration);
     }
   };
 
-  const setProgress = (value: number) => {
-    if (audioRef.current) {
-      audioRef.current.currentTime = value;
-      updateProgress(value);
-    }
+  const handleEnded = () => {
+    setIsPlaying(false);
+    updateProgress(0);
+    nextTrack();
   };
 
   React.useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume / 100;
+    if (!audioRef.current || !currentTrack) return;
+
+    if (isPlaying) {
+      audioRef.current.play();
+    } else {
+      audioRef.current.pause();
     }
-  }, [volume]);
+  }, [isPlaying, currentTrack]);
 
   return (
     <AudioContext.Provider
       value={{
         currentTrack,
         isPlaying,
-        playTrack,
-        pauseTrack,
         togglePlay,
-        setProgress,
         progress,
         duration,
         volume,
         setVolume,
+        playTrack,
+        nextTrack,
+        previousTrack,
       }}
     >
+      {children}
       <audio
         ref={audioRef}
+        src={currentTrack?.downloadUrl?.[4]?.link || currentTrack?.downloadUrl?.[0]?.link}
         onTimeUpdate={handleTimeUpdate}
-        onEnded={() => setIsPlaying(false)}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={handleEnded}
       />
-      {children}
     </AudioContext.Provider>
   );
 }

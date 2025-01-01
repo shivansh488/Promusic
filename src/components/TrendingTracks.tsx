@@ -2,11 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAudio } from "@/contexts/AudioContext";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePlaylist } from "@/contexts/PlaylistContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
+import { Play, Plus } from "lucide-react";
 import { useState } from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const fetchContent = async () => {
   try {
@@ -120,6 +121,13 @@ const fetchContent = async () => {
   }
 };
 
+type Album = {
+  id: string;
+  name: string;
+  image: { link: string }[];
+  songs: any[];
+};
+
 export const TrendingTracks = () => {
   const { data: content, isLoading, error } = useQuery({
     queryKey: ["music-content"],
@@ -128,19 +136,33 @@ export const TrendingTracks = () => {
     staleTime: 5 * 60 * 1000,
   });
   const { playTrack } = useAudio();
-  const [selectedAlbum, setSelectedAlbum] = useState<any>(null);
+  const { playlists, addToPlaylist } = usePlaylist();
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [selectedSong, setSelectedSong] = useState<any>(null);
+
+  const handleAlbumClick = (album: Album) => {
+    setSelectedAlbum(album);
+  };
+
+  const handleAddToPlaylist = (playlistId: string) => {
+    if (selectedSong) {
+      addToPlaylist(playlistId, selectedSong);
+      setSelectedSong(null);
+    }
+  };
 
   if (isLoading) {
-    // Show loading skeleton
     return (
       <div className="p-8">
         <h1 className="text-3xl font-bold mb-6">Loading...</h1>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {[...Array(10)].map((_, i) => (
-            <Card key={i} className="p-4">
-              <div className="w-full aspect-square bg-secondary animate-pulse rounded-md mb-4" />
-              <div className="h-4 bg-secondary animate-pulse rounded mb-2" />
-              <div className="h-3 bg-secondary animate-pulse rounded w-2/3" />
+            <Card key={i} className="bg-[#2a2a2a] border-none">
+              <div className="p-4">
+                <div className="w-full aspect-square bg-[#3a3a3a] animate-pulse rounded-md mb-4" />
+                <div className="h-4 bg-[#3a3a3a] animate-pulse rounded mb-2" />
+                <div className="h-3 bg-[#3a3a3a] animate-pulse rounded w-2/3" />
+              </div>
             </Card>
           ))}
         </div>
@@ -149,10 +171,9 @@ export const TrendingTracks = () => {
   }
 
   if (error) {
-    console.error("Error fetching content:", error);
     return (
       <div className="p-8">
-        <Alert className="max-w-2xl mb-6" variant="destructive">
+        <Alert className="max-w-2xl mb-6 bg-[#2a2a2a] border-none">
           <AlertTitle className="text-lg">Error Loading Music</AlertTitle>
           <AlertDescription>
             {error instanceof Error ? error.message : "There was an error loading the music content. Please try again later."}
@@ -162,48 +183,41 @@ export const TrendingTracks = () => {
     );
   }
 
-  if (!content || (!content.trending.length && !content.newReleases.length && !content.charts.length)) {
-    return (
-      <div className="p-8">
-        <Alert className="max-w-2xl mb-6">
-          <AlertTitle className="text-lg">No Content Found</AlertTitle>
-          <AlertDescription>
-            No music content is currently available. Please try again later.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
-  const handleAlbumClick = (album: any) => {
-    setSelectedAlbum(album);
-  };
-
   return (
-    <>
-      <Tabs defaultValue="trending" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="trending">Trending Now</TabsTrigger>
-          <TabsTrigger value="new">New Releases</TabsTrigger>
-          <TabsTrigger value="charts">Top Charts</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="trending" className="mt-0">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {content.trending.map((album: any) => (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-8">New</h1>
+      <div className="space-y-12">
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">Happy New Year!</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {content?.trending.slice(0, 5).map((album: Album) => (
               <Card
                 key={album.id}
-                className="group hover:bg-secondary/50 transition-colors cursor-pointer"
+                className="bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-colors border-none cursor-pointer group"
                 onClick={() => handleAlbumClick(album)}
               >
                 <div className="p-4">
-                  <img
-                    src={album.image?.[2]?.link || album.image?.[0]?.link}
-                    alt={album.name}
-                    className="w-full aspect-square object-cover rounded-md mb-4"
-                    loading="lazy"
-                  />
-                  <h3 className="font-medium truncate">{album.name}</h3>
+                  <div className="relative">
+                    <img
+                      src={album.image?.[2]?.link || album.image?.[0]?.link}
+                      alt={album.name}
+                      className="w-full aspect-square object-cover rounded-md mb-4"
+                      loading="lazy"
+                    />
+                    <Button
+                      size="icon"
+                      className="absolute bottom-6 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playTrack(album.songs[0], album);
+                      }}
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <h3 className="font-medium truncate text-sm">{album.name}</h3>
                   <p className="text-sm text-muted-foreground truncate">
                     {album.songs[0]?.primaryArtists}
                   </p>
@@ -211,24 +225,39 @@ export const TrendingTracks = () => {
               </Card>
             ))}
           </div>
-        </TabsContent>
+        </section>
 
-        <TabsContent value="new" className="mt-0">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {content.newReleases.map((album: any) => (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">New Releases</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {content?.newReleases.slice(0, 5).map((album: Album) => (
               <Card
                 key={album.id}
-                className="group hover:bg-secondary/50 transition-colors cursor-pointer"
+                className="bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-colors border-none cursor-pointer group"
                 onClick={() => handleAlbumClick(album)}
               >
                 <div className="p-4">
-                  <img
-                    src={album.image?.[2]?.link || album.image?.[0]?.link}
-                    alt={album.name}
-                    className="w-full aspect-square object-cover rounded-md mb-4"
-                    loading="lazy"
-                  />
-                  <h3 className="font-medium truncate">{album.name}</h3>
+                  <div className="relative">
+                    <img
+                      src={album.image?.[2]?.link || album.image?.[0]?.link}
+                      alt={album.name}
+                      className="w-full aspect-square object-cover rounded-md mb-4"
+                      loading="lazy"
+                    />
+                    <Button
+                      size="icon"
+                      className="absolute bottom-6 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playTrack(album.songs[0], album);
+                      }}
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <h3 className="font-medium truncate text-sm">{album.name}</h3>
                   <p className="text-sm text-muted-foreground truncate">
                     {album.songs[0]?.primaryArtists}
                   </p>
@@ -236,24 +265,39 @@ export const TrendingTracks = () => {
               </Card>
             ))}
           </div>
-        </TabsContent>
+        </section>
 
-        <TabsContent value="charts" className="mt-0">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {content.charts.map((chart: any) => (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">Top Charts</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {content?.charts.slice(0, 5).map((chart: Album) => (
               <Card
                 key={chart.id}
-                className="group hover:bg-secondary/50 transition-colors cursor-pointer"
+                className="bg-[#2a2a2a] hover:bg-[#3a3a3a] transition-colors border-none cursor-pointer group"
                 onClick={() => handleAlbumClick(chart)}
               >
                 <div className="p-4">
-                  <img
-                    src={chart.image?.[2]?.link || chart.image?.[0]?.link}
-                    alt={chart.name}
-                    className="w-full aspect-square object-cover rounded-md mb-4"
-                    loading="lazy"
-                  />
-                  <h3 className="font-medium truncate">{chart.name}</h3>
+                  <div className="relative">
+                    <img
+                      src={chart.image?.[2]?.link || chart.image?.[0]?.link}
+                      alt={chart.name}
+                      className="w-full aspect-square object-cover rounded-md mb-4"
+                      loading="lazy"
+                    />
+                    <Button
+                      size="icon"
+                      className="absolute bottom-6 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playTrack(chart.songs[0], chart);
+                      }}
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <h3 className="font-medium truncate text-sm">{chart.name}</h3>
                   <p className="text-sm text-muted-foreground truncate">
                     {chart.songs.length} songs
                   </p>
@@ -261,11 +305,11 @@ export const TrendingTracks = () => {
               </Card>
             ))}
           </div>
-        </TabsContent>
-      </Tabs>
+        </section>
+      </div>
 
       <Dialog open={!!selectedAlbum} onOpenChange={(open) => !open && setSelectedAlbum(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-[#1a1a1a] text-white border-none">
           {selectedAlbum && (
             <>
               <DialogHeader>
@@ -287,32 +331,39 @@ export const TrendingTracks = () => {
                 </div>
               </DialogHeader>
 
-              <div className="mt-6 space-y-2">
+              <div className="mt-6 space-y-1">
                 {selectedAlbum.songs.map((song: any, index: number) => (
                   <div
                     key={song.id}
-                    className="flex items-center gap-4 p-2 rounded-md hover:bg-secondary/50 cursor-pointer group"
-                    onClick={() => {
-                      playTrack(song);
-                      setSelectedAlbum(null);
-                    }}
+                    className="flex items-center gap-4 p-2 rounded-md hover:bg-[#2a2a2a] group"
                   >
                     <div className="w-8 text-center text-sm text-muted-foreground">
                       {index + 1}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate">{song.name}</h4>
+                      <h4 className="font-medium truncate text-sm">{song.name}</h4>
                       <p className="text-sm text-muted-foreground truncate">
                         {song.primaryArtists}
                       </p>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Play className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="opacity-0 group-hover:opacity-100"
+                        onClick={() => playTrack(song, selectedAlbum)}
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="opacity-0 group-hover:opacity-100"
+                        onClick={() => setSelectedSong(song)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -320,6 +371,33 @@ export const TrendingTracks = () => {
           )}
         </DialogContent>
       </Dialog>
-    </>
+
+      <Dialog open={!!selectedSong} onOpenChange={(open) => !open && setSelectedSong(null)}>
+        <DialogContent className="bg-[#1a1a1a] text-white border-none">
+          <DialogHeader>
+            <DialogTitle>Add to Playlist</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-1">
+              {playlists.map((playlist) => (
+                <Card
+                  key={playlist.id}
+                  className="p-3 flex items-center justify-between bg-[#2a2a2a] hover:bg-[#3a3a3a] border-none cursor-pointer"
+                  onClick={() => handleAddToPlaylist(playlist.id)}
+                >
+                  <div>
+                    <h3 className="font-medium text-sm">{playlist.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {playlist.songs.length} songs
+                    </p>
+                  </div>
+                  <Plus className="h-4 w-4" />
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
