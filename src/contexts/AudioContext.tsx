@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useCallback } from "react";
+import { getYouTubeAudioUrl } from "@/services/youtube";
 
 type Track = {
   id: string;
@@ -6,6 +7,7 @@ type Track = {
   primaryArtists: string;
   downloadUrl: { link: string }[];
   image: { link: string }[];
+  type?: 'youtube';
 };
 
 type Album = {
@@ -51,11 +53,24 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(!isPlaying);
   }, [isPlaying, currentTrack]);
 
-  const playTrack = useCallback((track: Track, album?: Album) => {
+  const playTrack = useCallback(async (track: Track, album?: Album) => {
     if (currentTrack?.id === track.id) {
       togglePlay();
       return;
     }
+
+    // If it's a YouTube track, get the audio URL
+    if (track.type === 'youtube') {
+      const videoId = track.downloadUrl[0].link.split('v=')[1];
+      const audioUrl = await getYouTubeAudioUrl(videoId);
+      if (audioUrl) {
+        track.downloadUrl = [{ link: audioUrl }];
+      } else {
+        console.error('Failed to get YouTube audio URL');
+        return;
+      }
+    }
+
     setCurrentTrack(track);
     if (album) {
       setCurrentAlbum(album);
@@ -75,10 +90,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const nextIndex = currentIndex + 1;
     if (nextIndex < currentAlbum.songs.length) {
       setCurrentIndex(nextIndex);
-      setCurrentTrack(currentAlbum.songs[nextIndex]);
-      setIsPlaying(true);
+      const nextTrack = currentAlbum.songs[nextIndex];
+      playTrack(nextTrack, currentAlbum);
     }
-  }, [currentAlbum, currentIndex]);
+  }, [currentAlbum, currentIndex, playTrack]);
 
   const previousTrack = useCallback(() => {
     if (!currentAlbum || currentIndex === -1) return;
@@ -86,10 +101,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     const prevIndex = currentIndex - 1;
     if (prevIndex >= 0) {
       setCurrentIndex(prevIndex);
-      setCurrentTrack(currentAlbum.songs[prevIndex]);
-      setIsPlaying(true);
+      const prevTrack = currentAlbum.songs[prevIndex];
+      playTrack(prevTrack, currentAlbum);
     }
-  }, [currentAlbum, currentIndex]);
+  }, [currentAlbum, currentIndex, playTrack]);
 
   React.useEffect(() => {
     const audio = audioRef.current;
@@ -125,7 +140,10 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     if (!audioRef.current || !currentTrack) return;
 
     if (isPlaying) {
-      audioRef.current.play();
+      audioRef.current.play().catch((error) => {
+        console.error('Error playing audio:', error);
+        setIsPlaying(false);
+      });
     } else {
       audioRef.current.pause();
     }

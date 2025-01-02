@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Youtube } from "lucide-react";
 import { useAudio } from "@/contexts/AudioContext";
 import {
   Command,
@@ -11,6 +11,8 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { useDebounce } from "../hooks/use-debounce";
+import { searchYouTubeVideos } from "@/services/youtube";
+import { Badge } from "@/components/ui/badge";
 
 export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -32,14 +34,14 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     setError(null);
 
     try {
-      // Fetch from multiple endpoints with pagination
+      // Fetch from JioSaavn API
       const [songsResponse, albumsResponse, playlistsResponse] = await Promise.all([
         fetch(
-          `https://jiosaavn-api-privatecvc2.vercel.app/search/songs?query=${encodeURIComponent(query)}&page=1&limit=20`,
+          `https://jiosaavn-api-privatecvc2.vercel.app/search/songs?query=${encodeURIComponent(query)}&page=1&limit=10`,
           { method: "GET" }
         ),
         fetch(
-          `https://jiosaavn-api-privatecvc2.vercel.app/search/albums?query=${encodeURIComponent(query)}&page=1&limit=10`,
+          `https://jiosaavn-api-privatecvc2.vercel.app/search/albums?query=${encodeURIComponent(query)}&page=1&limit=5`,
           { method: "GET" }
         ),
         fetch(
@@ -109,11 +111,15 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         })
       );
 
+      // Fetch YouTube results
+      const youtubeResults = await searchYouTubeVideos(query);
+
       // Combine all results and remove duplicates based on song ID
       const allSongs = [
         ...songs,
         ...albumSongs.flat(),
         ...playlistSongs.flat(),
+        ...youtubeResults,
       ].filter((song, index, self) => 
         song && song.id && index === self.findIndex((s) => s.id === song.id)
       );
@@ -137,7 +143,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         <div className="flex items-center border-b px-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
           <CommandInput
-            placeholder="Search for songs, albums, or artists..."
+            placeholder="Search for songs, albums, artists, or YouTube videos..."
             value={searchTerm}
             onValueChange={setSearchTerm}
             className="h-14 text-lg"
@@ -162,11 +168,22 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                     onClose();
                   }}
                 >
-                  <img
-                    src={song.image?.[2]?.link || song.image?.[0]?.link}
-                    alt={song.name}
-                    className="w-16 h-16 rounded object-cover"
-                  />
+                  <div className="relative">
+                    <img
+                      src={song.image?.[2]?.link || song.image?.[0]?.link}
+                      alt={song.name}
+                      className="w-16 h-16 rounded object-cover"
+                    />
+                    {song.type === 'youtube' && (
+                      <Badge
+                        variant="secondary"
+                        className="absolute bottom-1 right-1 bg-red-600 text-white"
+                      >
+                        <Youtube className="h-3 w-3 mr-1" />
+                        YT
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex flex-col flex-1 min-w-0">
                     <span className="font-medium text-lg truncate">{song.name}</span>
                     <span className="text-sm text-muted-foreground truncate">
