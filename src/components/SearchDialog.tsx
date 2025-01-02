@@ -1,23 +1,20 @@
 import { useState, useCallback, useEffect } from "react";
 import { Search, Loader2 } from "lucide-react";
-import { useAudio } from "@/contexts/AudioContext";
 import {
   Command,
   CommandDialog,
-  CommandEmpty,
-  CommandGroup,
   CommandInput,
-  CommandItem,
   CommandList,
 } from "@/components/ui/command";
 import { useDebounce } from "../hooks/use-debounce";
+import { searchSongs } from "@/lib/search-api";
+import { SearchResults } from "./SearchResults";
 
 export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { playTrack } = useAudio();
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
@@ -41,93 +38,9 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     setError(null);
 
     try {
-      // Fetch from multiple endpoints with pagination
-      const [songsResponse, albumsResponse, playlistsResponse] = await Promise.all([
-        fetch(
-          `https://jiosaavn-api-privatecvc2.vercel.app/search/songs?query=${encodeURIComponent(query)}&page=1&limit=20`,
-          { method: "GET" }
-        ),
-        fetch(
-          `https://jiosaavn-api-privatecvc2.vercel.app/search/albums?query=${encodeURIComponent(query)}&page=1&limit=10`,
-          { method: "GET" }
-        ),
-        fetch(
-          `https://jiosaavn-api-privatecvc2.vercel.app/search/playlists?query=${encodeURIComponent(query)}&page=1&limit=5`,
-          { method: "GET" }
-        ),
-      ]);
-
-      if (!songsResponse.ok || !albumsResponse.ok || !playlistsResponse.ok) {
-        throw new Error("Failed to fetch search results");
-      }
-
-      const [songsData, albumsData, playlistsData] = await Promise.all([
-        songsResponse.json(),
-        albumsResponse.json(),
-        playlistsResponse.json(),
-      ]);
-
-      // Process songs
-      const songs = songsData.data?.results || [];
-
-      // Process albums and fetch their songs
-      const albumSongs = await Promise.all(
-        (albumsData.data?.results || []).map(async (album: any) => {
-          try {
-            const albumResponse = await fetch(
-              `https://jiosaavn-api-privatecvc2.vercel.app/albums?id=${album.id}`,
-              { method: "GET" }
-            );
-            if (!albumResponse.ok) return [];
-            const albumData = await albumResponse.json();
-            return (albumData.data.songs || []).map((song: any) => ({
-              ...song,
-              albumInfo: {
-                name: album.name,
-                id: album.id,
-              },
-            }));
-          } catch (error) {
-            console.error("Error fetching album songs:", error);
-            return [];
-          }
-        })
-      );
-
-      // Process playlists and fetch their songs
-      const playlistSongs = await Promise.all(
-        (playlistsData.data?.results || []).map(async (playlist: any) => {
-          try {
-            const playlistResponse = await fetch(
-              `https://jiosaavn-api-privatecvc2.vercel.app/playlists?id=${playlist.id}`,
-              { method: "GET" }
-            );
-            if (!playlistResponse.ok) return [];
-            const playlistData = await playlistResponse.json();
-            return (playlistData.data.songs || []).map((song: any) => ({
-              ...song,
-              playlistInfo: {
-                name: playlist.name,
-                id: playlist.id,
-              },
-            }));
-          } catch (error) {
-            console.error("Error fetching playlist songs:", error);
-            return [];
-          }
-        })
-      );
-
-      // Combine all results and remove duplicates based on song ID
-      const allSongs = [
-        ...songs,
-        ...albumSongs.flat(),
-        ...playlistSongs.flat(),
-      ].filter((song, index, self) => 
-        song && song.id && index === self.findIndex((s) => s.id === song.id)
-      );
-
-      setSearchResults(allSongs);
+      const results = await searchSongs(query);
+      console.log("Search results:", results); // Debug log
+      setSearchResults(results);
     } catch (error) {
       console.error("Error searching:", error);
       setError("An error occurred while searching. Please try again.");
@@ -136,8 +49,10 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     }
   }, []);
 
+  // Only search when the dialog is open and we have a search term
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && debouncedSearchTerm) {
+      console.log("Searching for:", debouncedSearchTerm); // Debug log
       handleSearch(debouncedSearchTerm);
     }
   }, [debouncedSearchTerm, handleSearch, isOpen]);
@@ -156,48 +71,12 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
         </div>
         <CommandList className="h-[80vh]">
-          {error ? (
-            <CommandEmpty className="py-6 text-center text-sm text-destructive">
-              {error}
-            </CommandEmpty>
-          ) : searchResults.length === 0 && debouncedSearchTerm ? (
-            <CommandEmpty>No results found.</CommandEmpty>
-          ) : (
-            <CommandGroup heading={`Search Results (${searchResults.length})`}>
-              {searchResults.map((song) => (
-                <CommandItem
-                  key={song.id}
-                  className="flex items-center gap-4 p-4 cursor-pointer"
-                  onSelect={() => {
-                    playTrack(song);
-                    onClose();
-                  }}
-                >
-                  <img
-                    src={song.image?.[2]?.link || song.image?.[0]?.link}
-                    alt={song.name}
-                    className="w-16 h-16 rounded object-cover"
-                  />
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="font-medium text-lg truncate">{song.name}</span>
-                    <span className="text-sm text-muted-foreground truncate">
-                      {song.primaryArtists}
-                    </span>
-                    {song.albumInfo && (
-                      <span className="text-xs text-muted-foreground truncate">
-                        Album: {song.albumInfo.name}
-                      </span>
-                    )}
-                    {song.playlistInfo && (
-                      <span className="text-xs text-muted-foreground truncate">
-                        Playlist: {song.playlistInfo.name}
-                      </span>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
+          <SearchResults
+            results={searchResults}
+            error={error}
+            searchTerm={debouncedSearchTerm}
+            onSelect={onClose}
+          />
         </CommandList>
       </Command>
     </CommandDialog>
