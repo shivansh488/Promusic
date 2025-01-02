@@ -24,6 +24,7 @@ type AudioContextType = {
   volume: number;
   setVolume: (volume: number) => void;
   playTrack: (track: Track, album?: Album) => void;
+  playQueue: (tracks: Track[]) => void;
   nextTrack: () => void;
   previousTrack: () => void;
 };
@@ -50,6 +51,23 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
     setIsPlaying(!isPlaying);
   }, [isPlaying, currentTrack]);
+
+  const playQueue = useCallback((tracks: Track[]) => {
+    if (tracks.length === 0) return;
+    
+    // Create a virtual album from the tracks
+    const queueAlbum: Album = {
+      id: 'queue',
+      name: 'Queue',
+      songs: tracks,
+      image: tracks[0].image,
+    };
+    
+    setCurrentAlbum(queueAlbum);
+    setCurrentIndex(0);
+    setCurrentTrack(tracks[0]);
+    setIsPlaying(true);
+  }, []);
 
   const playTrack = useCallback((track: Track, album?: Album) => {
     if (currentTrack?.id === track.id) {
@@ -142,6 +160,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         volume,
         setVolume,
         playTrack,
+        playQueue,
         nextTrack,
         previousTrack,
       }}
@@ -164,4 +183,4 @@ export function useAudio() {
     throw new Error("useAudio must be used within an AudioProvider");
   }
   return context;
-} 
+}
