@@ -9,6 +9,7 @@ import { Play, Plus, Heart } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLikedSongs } from "@/contexts/LikedSongsContext";
+import { cn } from "@/lib/utils";
 
 const fetchContent = async () => {
   try {
