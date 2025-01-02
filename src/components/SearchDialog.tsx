@@ -21,6 +21,15 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
+  // Reset search state when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm("");
+      setSearchResults([]);
+      setError(null);
+    }
+  }, [isOpen]);
+
   const handleSearch = useCallback(async (query: string) => {
     if (!query) {
       setSearchResults([]);
@@ -128,8 +137,10 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   }, []);
 
   useEffect(() => {
-    handleSearch(debouncedSearchTerm);
-  }, [debouncedSearchTerm, handleSearch]);
+    if (isOpen) {
+      handleSearch(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, handleSearch, isOpen]);
 
   return (
     <CommandDialog open={isOpen} onOpenChange={onClose}>
