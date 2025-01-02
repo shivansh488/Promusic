@@ -5,9 +5,10 @@ import { useAudio } from "@/contexts/AudioContext";
 import { usePlaylist } from "@/contexts/PlaylistContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play, Plus } from "lucide-react";
+import { Play, Plus, Heart } from "lucide-react";
 import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLikedSongs } from "@/contexts/LikedSongsContext";
 
 const fetchContent = async () => {
   try {
@@ -137,6 +138,7 @@ export const TrendingTracks = () => {
   });
   const { playTrack } = useAudio();
   const { playlists, addToPlaylist } = usePlaylist();
+  const { addLikedSong, removeLikedSong, isLiked } = useLikedSongs();
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSong, setSelectedSong] = useState<any>(null);
 
@@ -216,6 +218,23 @@ export const TrendingTracks = () => {
                     >
                       <Play className="h-4 w-4" />
                     </Button>
+                    <Button
+                      size="icon"
+                      className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const song = album.songs[0];
+                        if (isLiked(song.id)) {
+                          removeLikedSong(song.id);
+                        } else {
+                          addLikedSong(song);
+                        }
+                      }}
+                    >
+                      <Heart
+                        className={cn("h-4 w-4", isLiked(album.songs[0].id) && "fill-current text-red-500")}
+                      />
+                    </Button>
                   </div>
                   <h3 className="font-medium truncate text-sm">{album.name}</h3>
                   <p className="text-sm text-muted-foreground truncate">
@@ -256,6 +275,23 @@ export const TrendingTracks = () => {
                     >
                       <Play className="h-4 w-4" />
                     </Button>
+                    <Button
+                      size="icon"
+                      className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const song = album.songs[0];
+                        if (isLiked(song.id)) {
+                          removeLikedSong(song.id);
+                        } else {
+                          addLikedSong(song);
+                        }
+                      }}
+                    >
+                      <Heart
+                        className={cn("h-4 w-4", isLiked(album.songs[0].id) && "fill-current text-red-500")}
+                      />
+                    </Button>
                   </div>
                   <h3 className="font-medium truncate text-sm">{album.name}</h3>
                   <p className="text-sm text-muted-foreground truncate">
@@ -295,6 +331,23 @@ export const TrendingTracks = () => {
                       }}
                     >
                       <Play className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const song = chart.songs[0];
+                        if (isLiked(song.id)) {
+                          removeLikedSong(song.id);
+                        } else {
+                          addLikedSong(song);
+                        }
+                      }}
+                    >
+                      <Heart
+                        className={cn("h-4 w-4", isLiked(chart.songs[0].id) && "fill-current text-red-500")}
+                      />
                     </Button>
                   </div>
                   <h3 className="font-medium truncate text-sm">{chart.name}</h3>
