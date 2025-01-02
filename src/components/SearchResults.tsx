@@ -10,6 +10,7 @@ interface SearchResult {
   name: string;
   primaryArtists: string;
   image: Array<{ link: string }>;
+  downloadUrl: Array<{ link: string }>; // Added this line to match Track type
   albumInfo?: {
     name: string;
     id: string;
