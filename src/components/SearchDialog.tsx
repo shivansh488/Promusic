@@ -16,7 +16,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 300); // Reduced debounce time for better responsiveness
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // Reset search state when dialog closes
   useEffect(() => {
@@ -28,7 +28,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   }, [isOpen]);
 
   const handleSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
+    if (!query) {
       setSearchResults([]);
       setError(null);
       return;
@@ -39,21 +39,20 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
     try {
       const results = await searchSongs(query);
-      console.log("Search results for query:", query, results); // Debug log
+      console.log("Search results:", results); // Debug log
       setSearchResults(results);
     } catch (error) {
       console.error("Error searching:", error);
       setError("An error occurred while searching. Please try again.");
-      setSearchResults([]); // Clear results on error
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Perform search when debounced term changes and dialog is open
+  // Only search when the dialog is open and we have a search term
   useEffect(() => {
-    if (isOpen) {
-      console.log("Searching with term:", debouncedSearchTerm); // Debug log
+    if (isOpen && debouncedSearchTerm) {
+      console.log("Searching for:", debouncedSearchTerm); // Debug log
       handleSearch(debouncedSearchTerm);
     }
   }, [debouncedSearchTerm, handleSearch, isOpen]);
@@ -66,12 +65,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           <CommandInput
             placeholder="Search for songs, albums, or artists..."
             value={searchTerm}
-            onValueChange={(value) => {
-              setSearchTerm(value);
-              if (!value.trim()) {
-                setSearchResults([]); // Clear results when search is empty
-              }
-            }}
+            onValueChange={setSearchTerm}
             className="h-14 text-lg"
           />
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
