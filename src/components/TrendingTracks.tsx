@@ -139,7 +139,7 @@ export const TrendingTracks = () => {
   });
   const { playTrack } = useAudio();
   const { playlists, addToPlaylist } = usePlaylist();
-  const { addLikedSong, removeLikedSong, isLiked } = useLikedSongs();
+  const { addToLikedSongs, removeFromLikedSongs, isLiked } = useLikedSongs();
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSong, setSelectedSong] = useState<any>(null);
 
@@ -151,6 +151,25 @@ export const TrendingTracks = () => {
     if (selectedSong) {
       addToPlaylist(playlistId, selectedSong);
       setSelectedSong(null);
+    }
+  };
+
+  const handleLikeClick = async (e: React.MouseEvent, song: any) => {
+    e.stopPropagation();
+    try {
+      if (isLiked(song)) {
+        await removeFromLikedSongs(song);
+      } else {
+        await addToLikedSongs({
+          id: song.id,
+          name: song.name,
+          primaryArtists: song.primaryArtists,
+          image: song.image,
+          downloadUrl: song.downloadUrl
+        });
+      }
+    } catch (error) {
+      console.error('Error handling like click:', error);
     }
   };
 
@@ -222,18 +241,13 @@ export const TrendingTracks = () => {
                     <Button
                       size="icon"
                       className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const song = album.songs[0];
-                        if (isLiked(song.id)) {
-                          removeLikedSong(song.id);
-                        } else {
-                          addLikedSong(song);
-                        }
-                      }}
+                      onClick={(e) => handleLikeClick(e, album.songs[0])}
                     >
                       <Heart
-                        className={cn("h-4 w-4", isLiked(album.songs[0].id) && "fill-current text-red-500")}
+                        className={cn(
+                          "h-4 w-4 transition-colors",
+                          isLiked(album.songs[0]) && "fill-current text-red-500"
+                        )}
                       />
                     </Button>
                   </div>
@@ -279,18 +293,13 @@ export const TrendingTracks = () => {
                     <Button
                       size="icon"
                       className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const song = album.songs[0];
-                        if (isLiked(song.id)) {
-                          removeLikedSong(song.id);
-                        } else {
-                          addLikedSong(song);
-                        }
-                      }}
+                      onClick={(e) => handleLikeClick(e, album.songs[0])}
                     >
                       <Heart
-                        className={cn("h-4 w-4", isLiked(album.songs[0].id) && "fill-current text-red-500")}
+                        className={cn(
+                          "h-4 w-4 transition-colors",
+                          isLiked(album.songs[0]) && "fill-current text-red-500"
+                        )}
                       />
                     </Button>
                   </div>
@@ -336,18 +345,13 @@ export const TrendingTracks = () => {
                     <Button
                       size="icon"
                       className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const song = chart.songs[0];
-                        if (isLiked(song.id)) {
-                          removeLikedSong(song.id);
-                        } else {
-                          addLikedSong(song);
-                        }
-                      }}
+                      onClick={(e) => handleLikeClick(e, chart.songs[0])}
                     >
                       <Heart
-                        className={cn("h-4 w-4", isLiked(chart.songs[0].id) && "fill-current text-red-500")}
+                        className={cn(
+                          "h-4 w-4 transition-colors",
+                          isLiked(chart.songs[0]) && "fill-current text-red-500"
+                        )}
                       />
                     </Button>
                   </div>
