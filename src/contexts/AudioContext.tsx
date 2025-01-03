@@ -49,6 +49,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
   const [currentIndex, setCurrentIndex] = useState(-1);
+  const wasPlayingRef = useRef(false);
 
   const togglePlay = useCallback(() => {
     if (!currentTrack) return;
@@ -168,15 +169,64 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    if (!audioRef.current) return;
+    
+    try {
+      // Store current playback state
+      wasPlayingRef.current = !audioRef.current.paused;
+      
+      // Update volume
+      audioRef.current.volume = newVolume;
+      setVolume(newVolume);
+
+      // Resume playback if it was playing
+      if (wasPlayingRef.current && audioRef.current.paused) {
+        const playPromise = audioRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error("Playback failed:", error);
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error changing volume:", error);
+    }
+  }, []);
+
   React.useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.volume = volume;
+    const handleVolumeUpdate = () => {
+      if (audio.volume !== volume) {
+        setVolume(audio.volume);
+      }
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+    };
+
+    const handlePause = () => {
+      if (!wasPlayingRef.current) {
+        setIsPlaying(false);
+      }
+    };
+
+    audio.addEventListener('volumechange', handleVolumeUpdate);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    
+    // Set initial volume without affecting playback
+    if (audio.volume !== volume) {
+      audio.volume = volume;
+    }
 
     return () => {
-      audio.pause();
-      audio.currentTime = 0;
+      audio.removeEventListener('volumechange', handleVolumeUpdate);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
     };
   }, [volume]);
 
@@ -228,7 +278,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         progress,
         duration,
         volume,
-        setVolume,
+        setVolume: handleVolumeChange,
         playTrack,
         playQueue,
         nextTrack,

@@ -40,8 +40,38 @@ export const Player = () => {
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
+  const volumeControlRef = useRef<HTMLDivElement>(null);
+
+  // Handle clicking outside volume control
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (volumeControlRef.current && !volumeControlRef.current.contains(event.target as Node)) {
+        setShowVolumeSlider(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleVolumeClick = () => {
+    if (window.innerWidth >= 1024) {
+      // On desktop, clicking the volume icon toggles mute
+      const newVolume = volume === 0 ? 1 : 0;
+      setVolume(newVolume);
+    } else {
+      // On mobile, clicking the volume icon shows/hides the slider
+      setShowVolumeSlider(!showVolumeSlider);
+    }
+  };
+
+  const handleVolumeChange = (value: number[]) => {
+    const newVolume = value[0] / 100;
+    setVolume(newVolume);
+  };
 
   const handleLikeClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!currentTrack || isLiking || isLoading) return;
     
@@ -70,6 +100,14 @@ export const Player = () => {
 
   const VolumeIcon = volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
+  const handleTrackInfoClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[role="button"]')) {
+      return;
+    }
+    setShowFullScreen(true);
+  };
+
   if (!currentTrack) return null;
 
   return (
@@ -79,7 +117,7 @@ export const Player = () => {
           {/* Track Info */}
           <div 
             className="flex items-center gap-3 lg:w-[30%] w-[40%] min-w-0 cursor-pointer group"
-            onClick={() => setShowFullScreen(true)}
+            onClick={handleTrackInfoClick}
           >
             {currentTrack && (
               <>
@@ -98,7 +136,7 @@ export const Player = () => {
                   size="icon"
                   variant="ghost"
                   className={cn(
-                    "h-8 w-8 hover:bg-[#2a2a2a]",
+                    "h-8 w-8 hover:bg-[#2a2a2a] relative z-10",
                     (isLiking || isLoading) && "opacity-50 cursor-not-allowed"
                   )}
                   onClick={handleLikeClick}
@@ -188,37 +226,133 @@ export const Player = () => {
 
           {/* Volume */}
           <div className="lg:w-[30%] w-[40%] flex justify-end">
-            <div className="relative flex items-center gap-2">
+            <div ref={volumeControlRef} className="relative flex items-center gap-2">
               <Button
                 size="icon"
                 variant="ghost"
                 className="h-8 w-8 text-muted-foreground hover:text-white"
-                onClick={() => setShowVolumeSlider(!showVolumeSlider)}
+                onClick={handleVolumeClick}
               >
                 <VolumeIcon className="h-4 w-4" />
               </Button>
-              <div className={cn(
-                "absolute bottom-full mb-2 p-4 bg-[#2a2a2a] rounded-lg transition-all",
-                showVolumeSlider ? "opacity-100 visible" : "opacity-0 invisible"
-              )}>
+
+              {/* Desktop Volume Slider */}
+              <div className="hidden lg:block w-24">
                 <Slider
-                  orientation="vertical"
                   value={[volume * 100]}
                   max={100}
                   step={1}
-                  className="h-24"
-                  onValueChange={(value) => setVolume(value[0] / 100)}
+                  className="w-full"
+                  onValueChange={handleVolumeChange}
                 />
+              </div>
+
+              {/* Mobile Volume Slider Popup */}
+              <div className={cn(
+                "lg:hidden absolute bottom-full right-0 mb-2 p-4 bg-[#2a2a2a] rounded-lg shadow-lg transition-all transform",
+                showVolumeSlider 
+                  ? "opacity-100 visible translate-y-0" 
+                  : "opacity-0 invisible translate-y-2 pointer-events-none"
+              )}>
+                <div className="h-32">
+                  <Slider
+                    orientation="vertical"
+                    value={[volume * 100]}
+                    max={100}
+                    step={1}
+                    onValueChange={handleVolumeChange}
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Fullscreen Player */}
+      {/* Fullscreen Player Dialog */}
       <Dialog open={showFullScreen} onOpenChange={setShowFullScreen}>
-        <DialogContent className="max-w-4xl bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] border-none text-white">
-          {/* ... rest of the fullscreen player code ... */}
+        <DialogContent className="max-w-4xl bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] border-none text-white p-8">
+          <div className="flex flex-col items-center gap-8">
+            <img
+              src={currentTrack.image?.[2]?.link || currentTrack.image?.[0]?.link}
+              alt={currentTrack.name}
+              className="w-64 h-64 rounded-lg object-cover shadow-2xl"
+            />
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-2">{currentTrack.name}</h2>
+              <p className="text-lg text-muted-foreground">{currentTrack.primaryArtists}</p>
+            </div>
+            
+            {/* Playback Controls */}
+            <div className="flex items-center gap-6">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-12 w-12 text-muted-foreground hover:text-white"
+                onClick={toggleShuffle}
+              >
+                <Shuffle className={`h-6 w-6 ${isShuffle ? 'text-primary' : ''}`} />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-12 w-12"
+                onClick={previousTrack}
+              >
+                <SkipBack className="h-6 w-6" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-16 w-16"
+                onClick={togglePlay}
+              >
+                {isPlaying ? (
+                  <Pause className="h-8 w-8" />
+                ) : (
+                  <Play className="h-8 w-8" />
+                )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-12 w-12"
+                onClick={nextTrack}
+              >
+                <SkipForward className="h-6 w-6" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-12 w-12 text-muted-foreground hover:text-white"
+                onClick={toggleRepeat}
+              >
+                <div className="relative">
+                  <Repeat className={`h-6 w-6 ${repeatMode !== 'off' ? 'text-primary' : ''}`} />
+                  {repeatMode === 'one' && (
+                    <span className="absolute -bottom-1 -right-1 text-sm text-primary">1</span>
+                  )}
+                </div>
+              </Button>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full max-w-2xl flex items-center gap-4">
+              <span className="text-sm text-muted-foreground w-12 text-right">
+                {formatTime(progress)}
+              </span>
+              <Slider
+                value={[progress]}
+                max={duration}
+                step={1}
+                className="w-full"
+                onValueChange={(value) => seek(value[0])}
+              />
+              <span className="text-sm text-muted-foreground w-12">
+                {formatTime(duration)}
+              </span>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>
