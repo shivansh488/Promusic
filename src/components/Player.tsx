@@ -13,8 +13,9 @@ import {
   Shuffle,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export const Player = () => {
   const {
@@ -27,9 +28,29 @@ export const Player = () => {
     setVolume,
     nextTrack,
     previousTrack,
+    isRepeat,
+    isShuffle,
+    toggleRepeat,
+    toggleShuffle,
+    seek,
+    repeatMode,
   } = useAudio();
 
   const [showFullScreen, setShowFullScreen] = useState(false);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const volumeControlRef = useRef<HTMLDivElement>(null);
+
+  // Handle clicking outside volume control
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (volumeControlRef.current && !volumeControlRef.current.contains(event.target as Node)) {
+        setShowVolumeSlider(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
@@ -46,7 +67,7 @@ export const Player = () => {
       <div className="h-full flex items-center px-4 gap-4">
         {/* Track Info */}
         <div 
-          className="flex items-center gap-3 w-[30%] min-w-[300px] cursor-pointer group"
+          className="flex items-center gap-3 lg:w-[30%] w-[40%] min-w-0 cursor-pointer group"
           onClick={() => setShowFullScreen(true)}
         >
           <img
@@ -68,9 +89,10 @@ export const Player = () => {
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 text-muted-foreground hover:text-white"
+              className="h-8 w-8 text-muted-foreground hover:text-white hidden sm:flex"
+              onClick={toggleShuffle}
             >
-              <Shuffle className="h-4 w-4" />
+              <Shuffle className={`h-4 w-4 ${isShuffle ? 'text-primary' : ''}`} />
             </Button>
             <Button
               size="icon"
@@ -103,9 +125,15 @@ export const Player = () => {
             <Button
               size="icon"
               variant="ghost"
-              className="h-8 w-8 text-muted-foreground hover:text-white"
+              className="h-8 w-8 text-muted-foreground hover:text-white hidden sm:flex"
+              onClick={toggleRepeat}
             >
-              <Repeat className="h-4 w-4" />
+              <div className="relative">
+                <Repeat className={`h-4 w-4 ${repeatMode !== 'off' ? 'text-primary' : ''}`} />
+                {repeatMode === 'one' && (
+                  <span className="absolute -bottom-1 -right-1 text-[10px] text-primary">1</span>
+                )}
+              </div>
             </Button>
           </div>
           <div className="flex items-center gap-2 w-full">
@@ -118,7 +146,7 @@ export const Player = () => {
               step={1}
               className="w-full"
               onValueChange={(value) => {
-                // TODO: Implement seek
+                seek(value[0]);
               }}
             />
             <span className="text-xs text-muted-foreground w-10">
@@ -128,22 +156,47 @@ export const Player = () => {
         </div>
 
         {/* Volume */}
-        <div className="flex items-center gap-2 w-[30%] min-w-[200px] justify-end">
+        <div 
+          ref={volumeControlRef}
+          className="relative flex items-center gap-2 lg:w-[30%] w-[20%] min-w-[100px] justify-end"
+        >
           <Button
             size="icon"
             variant="ghost"
             className="h-8 w-8"
-            onClick={() => setVolume(volume === 0 ? 1 : 0)}
+            onClick={() => {
+              if (window.innerWidth >= 1024) {
+                setVolume(volume === 0 ? 1 : 0);
+              } else {
+                setShowVolumeSlider(!showVolumeSlider);
+              }
+            }}
           >
             <VolumeIcon className="h-4 w-4" />
           </Button>
-          <Slider
-            value={[volume * 100]}
-            max={100}
-            step={1}
-            className="w-[100px]"
-            onValueChange={(value) => setVolume(value[0] / 100)}
-          />
+          
+          {/* Desktop Volume Slider */}
+          <div className="hidden lg:block w-[100px]">
+            <Slider
+              value={[volume * 100]}
+              max={100}
+              step={1}
+              onValueChange={(value) => setVolume(value[0] / 100)}
+            />
+          </div>
+
+          {/* Mobile Volume Slider Popup */}
+          <div className={cn(
+            "lg:hidden absolute bottom-full right-0 mb-2 p-4 bg-[#1a1a1a] rounded-lg shadow-xl w-[200px] transform transition-all duration-200",
+            showVolumeSlider ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none"
+          )}>
+            <Slider
+              value={[volume * 100]}
+              max={100}
+              step={1}
+              onValueChange={(value) => setVolume(value[0] / 100)}
+            />
+          </div>
         </div>
       </div>
 
@@ -230,7 +283,7 @@ export const Player = () => {
                   step={1}
                   className="flex-1"
                   onValueChange={(value) => {
-                    // TODO: Implement seek
+                    seek(value[0]);
                   }}
                 />
                 <span className="text-sm text-white/80">

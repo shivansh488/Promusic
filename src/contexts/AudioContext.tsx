@@ -15,6 +15,8 @@ type Album = {
   image: { link: string }[];
 };
 
+type RepeatMode = 'off' | 'all' | 'one';
+
 type AudioContextType = {
   currentTrack: Track | null;
   isPlaying: boolean;
@@ -27,6 +29,11 @@ type AudioContextType = {
   playQueue: (tracks: Track[]) => void;
   nextTrack: () => void;
   previousTrack: () => void;
+  isShuffle: boolean;
+  toggleShuffle: () => void;
+  seek: (time: number) => void;
+  repeatMode: RepeatMode;
+  toggleRepeat: () => void;
 };
 
 const AudioContext = createContext<AudioContextType | null>(null);
@@ -37,6 +44,8 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const [progress, updateProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('off');
+  const [isShuffle, setIsShuffle] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
   const [currentIndex, setCurrentIndex] = useState(-1);
@@ -87,16 +96,59 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     setIsPlaying(true);
   }, [currentTrack, togglePlay]);
 
+  const toggleRepeat = useCallback(() => {
+    setRepeatMode(current => {
+      switch (current) {
+        case 'off':
+          return 'all';
+        case 'all':
+          return 'one';
+        case 'one':
+          return 'off';
+      }
+    });
+  }, []);
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffle(prev => !prev);
+  }, []);
+
+  const getNextIndex = useCallback(() => {
+    if (!currentAlbum) return -1;
+    
+    if (isShuffle) {
+      // Get a random index excluding the current one
+      const availableIndices = Array.from(
+        { length: currentAlbum.songs.length },
+        (_, i) => i
+      ).filter(i => i !== currentIndex);
+      
+      if (availableIndices.length === 0) return -1;
+      return availableIndices[Math.floor(Math.random() * availableIndices.length)];
+    }
+    
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= currentAlbum.songs.length) {
+      return repeatMode === 'all' ? 0 : -1;
+    }
+    return nextIndex;
+  }, [currentAlbum, currentIndex, isShuffle, repeatMode]);
+
   const nextTrack = useCallback(() => {
     if (!currentAlbum || currentIndex === -1) return;
     
-    const nextIndex = currentIndex + 1;
-    if (nextIndex < currentAlbum.songs.length) {
+    const nextIndex = getNextIndex();
+    if (nextIndex !== -1) {
       setCurrentIndex(nextIndex);
       setCurrentTrack(currentAlbum.songs[nextIndex]);
       setIsPlaying(true);
+    } else if (repeatMode === 'all') {
+      // If we're at the end and repeat is on, start from the beginning
+      setCurrentIndex(0);
+      setCurrentTrack(currentAlbum.songs[0]);
+      setIsPlaying(true);
     }
-  }, [currentAlbum, currentIndex]);
+  }, [currentAlbum, currentIndex, getNextIndex, repeatMode]);
 
   const previousTrack = useCallback(() => {
     if (!currentAlbum || currentIndex === -1) return;
@@ -108,6 +160,13 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
       setIsPlaying(true);
     }
   }, [currentAlbum, currentIndex]);
+
+  const seek = useCallback((time: number) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      updateProgress(time);
+    }
+  }, []);
 
   React.useEffect(() => {
     const audio = audioRef.current;
@@ -136,7 +195,18 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
   const handleEnded = () => {
     setIsPlaying(false);
     updateProgress(0);
-    nextTrack();
+    
+    if (repeatMode === 'one') {
+      // Repeat single track
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play();
+        setIsPlaying(true);
+      }
+    } else {
+      // Handle next track (with repeat all if enabled)
+      nextTrack();
+    }
   };
 
   React.useEffect(() => {
@@ -163,6 +233,11 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
         playQueue,
         nextTrack,
         previousTrack,
+        isShuffle,
+        toggleShuffle,
+        seek,
+        repeatMode,
+        toggleRepeat,
       }}
     >
       {children}

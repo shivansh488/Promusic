@@ -1,50 +1,83 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Track } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { useAuth } from './AuthContext';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  arrayUnion, 
+  arrayRemove 
+} from 'firebase/firestore';
 
-type Track = {
-  id: string;
-  name: string;
-  primaryArtists: string;
-  image: Array<{ link: string }>;
-  downloadUrl: Array<{ link: string }>;
-};
-
-type LikedSongsContextType = {
+interface LikedSongsContextType {
   likedSongs: Track[];
-  addLikedSong: (song: Track) => void;
-  removeLikedSong: (songId: string) => void;
-  isLiked: (songId: string) => boolean;
-};
+  addToLikedSongs: (track: Track) => void;
+  removeFromLikedSongs: (track: Track) => void;
+  isLiked: (track: Track) => boolean;
+}
 
 const LikedSongsContext = createContext<LikedSongsContextType | null>(null);
 
-export function LikedSongsProvider({ children }: { children: React.ReactNode }) {
-  const [likedSongs, setLikedSongs] = useState<Track[]>(() => {
-    const saved = localStorage.getItem("likedSongs");
-    return saved ? JSON.parse(saved) : [];
-  });
+export function LikedSongsProvider({ children }: { children: ReactNode }) {
+  const [likedSongs, setLikedSongs] = useState<Track[]>([]);
+  const { user } = useAuth();
 
+  // Load liked songs from Firebase when user logs in
   useEffect(() => {
-    localStorage.setItem("likedSongs", JSON.stringify(likedSongs));
-  }, [likedSongs]);
+    const loadLikedSongs = async () => {
+      if (user) {
+        const userDoc = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userDoc);
+        
+        if (docSnap.exists()) {
+          setLikedSongs(docSnap.data().likedSongs || []);
+        } else {
+          // Create user document if it doesn't exist
+          await setDoc(userDoc, { likedSongs: [] });
+        }
+      } else {
+        setLikedSongs([]); // Clear liked songs when user logs out
+      }
+    };
 
-  const addLikedSong = (song: Track) => {
-    setLikedSongs((prev) => {
-      if (prev.some((s) => s.id === song.id)) return prev;
-      return [...prev, song];
-    });
+    loadLikedSongs();
+  }, [user]);
+
+  const addToLikedSongs = async (track: Track) => {
+    if (user) {
+      const userDoc = doc(db, 'users', user.uid);
+      await setDoc(userDoc, {
+        likedSongs: arrayUnion(track)
+      }, { merge: true });
+      
+      setLikedSongs((prev) => [...prev, track]);
+    }
   };
 
-  const removeLikedSong = (songId: string) => {
-    setLikedSongs((prev) => prev.filter((song) => song.id !== songId));
+  const removeFromLikedSongs = async (track: Track) => {
+    if (user) {
+      const userDoc = doc(db, 'users', user.uid);
+      await setDoc(userDoc, {
+        likedSongs: arrayRemove(track)
+      }, { merge: true });
+      
+      setLikedSongs((prev) => prev.filter((t) => t.id !== track.id));
+    }
   };
 
-  const isLiked = (songId: string) => {
-    return likedSongs.some((song) => song.id === songId);
+  const isLiked = (track: Track) => {
+    return likedSongs.some((t) => t.id === track.id);
   };
 
   return (
     <LikedSongsContext.Provider
-      value={{ likedSongs, addLikedSong, removeLikedSong, isLiked }}
+      value={{
+        likedSongs,
+        addToLikedSongs,
+        removeFromLikedSongs,
+        isLiked,
+      }}
     >
       {children}
     </LikedSongsContext.Provider>
@@ -54,7 +87,7 @@ export function LikedSongsProvider({ children }: { children: React.ReactNode }) 
 export function useLikedSongs() {
   const context = useContext(LikedSongsContext);
   if (!context) {
-    throw new Error("useLikedSongs must be used within a LikedSongsProvider");
+    throw new Error('useLikedSongs must be used within a LikedSongsProvider');
   }
   return context;
 }
