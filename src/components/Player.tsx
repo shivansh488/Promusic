@@ -36,15 +36,17 @@ export const Player = () => {
     repeatMode,
     toggleRepeat
   } = useAudio();
-  const { addToLikedSongs, removeFromLikedSongs, isLiked } = useLikedSongs();
+  const { addToLikedSongs, removeFromLikedSongs, isLiked, isLoading } = useLikedSongs();
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [isLiking, setIsLiking] = useState(false);
 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!currentTrack) return;
+    if (!currentTrack || isLiking || isLoading) return;
     
     try {
+      setIsLiking(true);
       const trackData = {
         id: currentTrack.id,
         name: currentTrack.name,
@@ -53,21 +55,16 @@ export const Player = () => {
         downloadUrl: currentTrack.downloadUrl || []
       };
 
-      console.log('Current track:', currentTrack);
-      console.log('Track data:', trackData);
-      console.log('Is liked before:', isLiked(trackData));
-
-      if (isLiked(trackData)) {
-        console.log('Removing from liked songs');
+      const liked = isLiked(trackData);
+      if (liked) {
         await removeFromLikedSongs(trackData);
       } else {
-        console.log('Adding to liked songs');
         await addToLikedSongs(trackData);
       }
-
-      console.log('Is liked after:', isLiked(trackData));
     } catch (error) {
       console.error('Error handling like click:', error);
+    } finally {
+      setIsLiking(false);
     }
   };
 
@@ -100,15 +97,17 @@ export const Player = () => {
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-8 w-8 hover:bg-[#2a2a2a]"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleLikeClick(e);
-                  }}
+                  className={cn(
+                    "h-8 w-8 hover:bg-[#2a2a2a]",
+                    (isLiking || isLoading) && "opacity-50 cursor-not-allowed"
+                  )}
+                  onClick={handleLikeClick}
+                  disabled={isLiking || isLoading}
                 >
                   <Heart className={cn(
                     "h-4 w-4 transition-colors",
-                    isLiked(currentTrack) && "fill-current text-red-500"
+                    isLiked(currentTrack) && "fill-current text-red-500",
+                    (isLiking || isLoading) && "animate-pulse"
                   )} />
                 </Button>
               </>

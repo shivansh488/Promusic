@@ -9,7 +9,6 @@ import {
   updateDoc,
   collection,
   onSnapshot,
-  runTransaction,
   enableIndexedDbPersistence
 } from 'firebase/firestore';
 
@@ -18,6 +17,7 @@ interface LikedSongsContextType {
   addToLikedSongs: (track: Track) => Promise<void>;
   removeFromLikedSongs: (track: Track) => Promise<void>;
   isLiked: (track: Track) => boolean;
+  isLoading: boolean;
 }
 
 const LikedSongsContext = createContext<LikedSongsContextType | null>(null);
@@ -37,7 +37,7 @@ try {
 
 export function LikedSongsProvider({ children }: { children: ReactNode }) {
   const [likedSongs, setLikedSongs] = useState<Track[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
   // Load liked songs from Firebase when user logs in
@@ -47,53 +47,53 @@ export function LikedSongsProvider({ children }: { children: ReactNode }) {
     const setupListener = async () => {
       if (!user) {
         setLikedSongs([]);
-        setIsInitialized(false);
+        setIsLoading(false);
         return;
       }
 
       try {
-        // First, ensure the user document exists
+        setIsLoading(true);
         const userDocRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(userDocRef);
 
-        if (!docSnap.exists()) {
-          // Create initial document if it doesn't exist
-          const initialData = {
-            uid: user.uid,
-            email: user.email,
-            likedSongs: [],
-            playlists: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          await setDoc(userDocRef, initialData);
-        }
-
-        // Set up real-time listener
+        // Set up real-time listener with local cache first
         unsubscribe = onSnapshot(
           userDocRef,
-          { includeMetadataChanges: true }, // This ensures we get updates even when offline
+          { includeMetadataChanges: true },
           (doc) => {
             if (doc.exists()) {
               const data = doc.data();
               setLikedSongs(data.likedSongs || []);
-              if (!isInitialized) setIsInitialized(true);
+            } else {
+              // Create initial document if it doesn't exist
+              const initialData = {
+                uid: user.uid,
+                email: user.email,
+                likedSongs: [],
+                playlists: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              setDoc(userDocRef, initialData)
+                .then(() => setLikedSongs([]))
+                .catch(console.error);
             }
+            setIsLoading(false);
           },
           (error) => {
             console.error('Error listening to liked songs:', error);
             setLikedSongs([]);
+            setIsLoading(false);
           }
         );
       } catch (error) {
         console.error('Error setting up liked songs listener:', error);
         setLikedSongs([]);
+        setIsLoading(false);
       }
     };
 
     setupListener();
 
-    // Cleanup subscription
     return () => {
       if (unsubscribe) {
         unsubscribe();
@@ -102,15 +102,13 @@ export function LikedSongsProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const addToLikedSongs = async (track: Track) => {
-    if (!user || !isInitialized) return;
+    if (!user) return;
     
     try {
       const userDocRef = doc(db, 'users', user.uid);
-
-      // Use a simple update instead of transaction for better offline support
       const docSnap = await getDoc(userDocRef);
+
       if (!docSnap.exists()) {
-        // Create document if it doesn't exist
         const initialData = {
           uid: user.uid,
           email: user.email,
@@ -125,6 +123,9 @@ export function LikedSongsProvider({ children }: { children: ReactNode }) {
 
       const currentData = docSnap.data();
       const currentLikedSongs = currentData.likedSongs || [];
+
+      // Optimistically update the UI
+      setLikedSongs(prev => [...prev, track]);
 
       // Check if song is already liked
       if (currentLikedSongs.some((s: Track) => s.id === track.id)) {
@@ -146,17 +147,21 @@ export function LikedSongsProvider({ children }: { children: ReactNode }) {
         updatedAt: new Date().toISOString()
       });
     } catch (error) {
+      // Revert optimistic update on error
+      setLikedSongs(prev => prev.filter(s => s.id !== track.id));
       console.error('Error adding song to liked songs:', error);
     }
   };
 
   const removeFromLikedSongs = async (track: Track) => {
-    if (!user || !isInitialized) return;
+    if (!user) return;
     
     try {
       const userDocRef = doc(db, 'users', user.uid);
 
-      // Use a simple update instead of transaction for better offline support
+      // Optimistically update the UI
+      setLikedSongs(prev => prev.filter(s => s.id !== track.id));
+
       const docSnap = await getDoc(userDocRef);
       if (!docSnap.exists()) return;
 
@@ -169,12 +174,14 @@ export function LikedSongsProvider({ children }: { children: ReactNode }) {
         updatedAt: new Date().toISOString()
       });
     } catch (error) {
+      // Revert optimistic update on error
+      setLikedSongs(prev => [...prev, track]);
       console.error('Error removing song from liked songs:', error);
     }
   };
 
   const isLiked = (track: Track): boolean => {
-    if (!track?.id || !likedSongs?.length || !isInitialized) return false;
+    if (!track?.id || !likedSongs?.length) return false;
     return likedSongs.some(likedTrack => likedTrack.id === track.id);
   };
 
@@ -185,6 +192,7 @@ export function LikedSongsProvider({ children }: { children: ReactNode }) {
         addToLikedSongs,
         removeFromLikedSongs,
         isLiked,
+        isLoading
       }}
     >
       {children}
