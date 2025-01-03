@@ -157,16 +157,18 @@ export const TrendingTracks = () => {
   const handleLikeClick = async (e: React.MouseEvent, song: any) => {
     e.stopPropagation();
     try {
-      if (isLiked(song)) {
-        await removeFromLikedSongs(song);
+      const trackData = {
+        id: song.id,
+        name: song.name,
+        primaryArtists: song.primaryArtists,
+        image: song.image,
+        downloadUrl: song.downloadUrl
+      };
+
+      if (isLiked(trackData)) {
+        await removeFromLikedSongs(trackData);
       } else {
-        await addToLikedSongs({
-          id: song.id,
-          name: song.name,
-          primaryArtists: song.primaryArtists,
-          image: song.image,
-          downloadUrl: song.downloadUrl
-        });
+        await addToLikedSongs(trackData);
       }
     } catch (error) {
       console.error('Error handling like click:', error);
@@ -238,18 +240,6 @@ export const TrendingTracks = () => {
                     >
                       <Play className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="icon"
-                      className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
-                      onClick={(e) => handleLikeClick(e, album.songs[0])}
-                    >
-                      <Heart
-                        className={cn(
-                          "h-4 w-4 transition-colors",
-                          isLiked(album.songs[0]) && "fill-current text-red-500"
-                        )}
-                      />
-                    </Button>
                   </div>
                   <h3 className="font-medium truncate text-sm">{album.name}</h3>
                   <p className="text-sm text-muted-foreground truncate">
@@ -290,18 +280,6 @@ export const TrendingTracks = () => {
                     >
                       <Play className="h-4 w-4" />
                     </Button>
-                    <Button
-                      size="icon"
-                      className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
-                      onClick={(e) => handleLikeClick(e, album.songs[0])}
-                    >
-                      <Heart
-                        className={cn(
-                          "h-4 w-4 transition-colors",
-                          isLiked(album.songs[0]) && "fill-current text-red-500"
-                        )}
-                      />
-                    </Button>
                   </div>
                   <h3 className="font-medium truncate text-sm">{album.name}</h3>
                   <p className="text-sm text-muted-foreground truncate">
@@ -341,18 +319,6 @@ export const TrendingTracks = () => {
                       }}
                     >
                       <Play className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      className="absolute bottom-6 right-10 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
-                      onClick={(e) => handleLikeClick(e, chart.songs[0])}
-                    >
-                      <Heart
-                        className={cn(
-                          "h-4 w-4 transition-colors",
-                          isLiked(chart.songs[0]) && "fill-current text-red-500"
-                        )}
-                      />
                     </Button>
                   </div>
                   <h3 className="font-medium truncate text-sm">{chart.name}</h3>

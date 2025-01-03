@@ -3,10 +3,19 @@ import { useAudio } from "@/contexts/AudioContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Play, Heart } from "lucide-react";
+import { Track } from "@/lib/types";
 
 export const LikedSongs = () => {
-  const { likedSongs, removeLikedSong } = useLikedSongs();
+  const { likedSongs, removeFromLikedSongs } = useLikedSongs();
   const { playTrack } = useAudio();
+
+  const handleRemoveSong = async (song: Track) => {
+    try {
+      await removeFromLikedSongs(song);
+    } catch (error) {
+      console.error('Error removing song:', error);
+    }
+  };
 
   return (
     <ScrollArea className="flex-1">
@@ -40,7 +49,7 @@ export const LikedSongs = () => {
                 size="icon"
                 variant="ghost"
                 className="h-8 w-8 text-red-500"
-                onClick={() => removeLikedSong(song.id)}
+                onClick={() => handleRemoveSong(song)}
               >
                 <Heart className="h-4 w-4 fill-current" />
               </Button>

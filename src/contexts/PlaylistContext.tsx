@@ -1,83 +1,211 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Track } from '@/lib/types';
+import { db } from '@/lib/firebase';
+import { useAuth } from './AuthContext';
+import { 
+  doc, 
+  setDoc, 
+  getDoc,
+  updateDoc
+} from 'firebase/firestore';
 
-type Playlist = {
+interface Playlist {
   id: string;
   name: string;
-  songs: any[];
-  createdAt: Date;
-};
+  songs: Track[];
+  createdAt: string;
+  updatedAt: string;
+}
 
-type PlaylistContextType = {
+interface PlaylistContextType {
   playlists: Playlist[];
-  createPlaylist: (name: string) => void;
-  addToPlaylist: (playlistId: string, song: any) => void;
-  removeFromPlaylist: (playlistId: string, songId: string) => void;
-  deletePlaylist: (playlistId: string) => void;
-  getPlaylist: (playlistId: string) => Playlist | undefined;
-};
+  createPlaylist: (name: string) => Promise<void>;
+  deletePlaylist: (id: string) => Promise<void>;
+  addToPlaylist: (playlistId: string, track: Track) => Promise<void>;
+  removeFromPlaylist: (playlistId: string, trackId: string) => Promise<void>;
+}
 
 const PlaylistContext = createContext<PlaylistContextType | null>(null);
 
-export function PlaylistProvider({ children }: { children: React.ReactNode }) {
-  const [playlists, setPlaylists] = useState<Playlist[]>(() => {
-    // Load playlists from localStorage on initial render
-    const savedPlaylists = localStorage.getItem("playlists");
-    return savedPlaylists ? JSON.parse(savedPlaylists) : [];
-  });
+export function PlaylistProvider({ children }: { children: ReactNode }) {
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const { user } = useAuth();
 
-  // Save playlists to localStorage whenever they change
+  // Load playlists from Firebase when user logs in
   useEffect(() => {
-    localStorage.setItem("playlists", JSON.stringify(playlists));
-  }, [playlists]);
+    const loadPlaylists = async () => {
+      if (!user) {
+        setPlaylists([]);
+        return;
+      }
 
-  const createPlaylist = (name: string) => {
-    const newPlaylist: Playlist = {
-      id: crypto.randomUUID(),
-      name,
-      songs: [],
-      createdAt: new Date(),
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (!docSnap.exists()) {
+          // If document doesn't exist, create it with initial data
+          const initialData = {
+            uid: user.uid,
+            email: user.email,
+            playlists: [],
+            likedSongs: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          await setDoc(userDocRef, initialData);
+          setPlaylists([]);
+        } else {
+          // Document exists, load playlists
+          const data = docSnap.data();
+          setPlaylists(data.playlists || []);
+        }
+      } catch (error) {
+        console.error('Error loading playlists:', error);
+        setPlaylists([]);
+      }
     };
-    setPlaylists((prev) => [...prev, newPlaylist]);
+
+    loadPlaylists();
+  }, [user]);
+
+  const createPlaylist = async (name: string) => {
+    if (!user) return;
+
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userDocRef);
+      
+      if (!docSnap.exists()) return;
+
+      const newPlaylist: Playlist = {
+        id: crypto.randomUUID(),
+        name,
+        songs: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Update local state
+      const updatedPlaylists = [...playlists, newPlaylist];
+      setPlaylists(updatedPlaylists);
+
+      // Update Firebase
+      await updateDoc(userDocRef, {
+        playlists: updatedPlaylists,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error creating playlist:', error);
+      // Revert local state if Firebase update fails
+      setPlaylists(prev => prev.filter(p => p.id !== newPlaylist.id));
+    }
   };
 
-  const addToPlaylist = (playlistId: string, song: any) => {
-    setPlaylists((prev) =>
-      prev.map((playlist) => {
-        if (playlist.id === playlistId) {
-          // Check if song already exists in playlist
-          const songExists = playlist.songs.some((s) => s.id === song.id);
-          if (songExists) return playlist;
-          
-          return {
-            ...playlist,
-            songs: [...playlist.songs, song],
-          };
-        }
-        return playlist;
-      })
-    );
+  const deletePlaylist = async (playlistId: string) => {
+    if (!user) return;
+
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userDocRef);
+      
+      if (!docSnap.exists()) return;
+
+      // Update local state
+      const updatedPlaylists = playlists.filter(p => p.id !== playlistId);
+      setPlaylists(updatedPlaylists);
+
+      // Update Firebase
+      await updateDoc(userDocRef, {
+        playlists: updatedPlaylists,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error deleting playlist:', error);
+      // Revert local state if Firebase update fails
+      const docSnap = await getDoc(doc(db, 'users', user.uid));
+      if (docSnap.exists()) {
+        setPlaylists(docSnap.data().playlists || []);
+      }
+    }
   };
 
-  const removeFromPlaylist = (playlistId: string, songId: string) => {
-    setPlaylists((prev) =>
-      prev.map((playlist) => {
-        if (playlist.id === playlistId) {
-          return {
-            ...playlist,
-            songs: playlist.songs.filter((song) => song.id !== songId),
-          };
-        }
-        return playlist;
-      })
-    );
+  const addToPlaylist = async (playlistId: string, track: Track) => {
+    if (!user) return;
+
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userDocRef);
+      
+      if (!docSnap.exists()) return;
+
+      const playlistIndex = playlists.findIndex(p => p.id === playlistId);
+      if (playlistIndex === -1) return;
+
+      // Create new playlist with added song
+      const updatedPlaylist = {
+        ...playlists[playlistIndex],
+        songs: [...playlists[playlistIndex].songs, track],
+        updatedAt: new Date().toISOString()
+      };
+
+      // Update local state
+      const updatedPlaylists = [...playlists];
+      updatedPlaylists[playlistIndex] = updatedPlaylist;
+      setPlaylists(updatedPlaylists);
+
+      // Update Firebase
+      await updateDoc(userDocRef, {
+        playlists: updatedPlaylists,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding song to playlist:', error);
+      // Revert local state if Firebase update fails
+      const docSnap = await getDoc(doc(db, 'users', user.uid));
+      if (docSnap.exists()) {
+        setPlaylists(docSnap.data().playlists || []);
+      }
+    }
   };
 
-  const deletePlaylist = (playlistId: string) => {
-    setPlaylists((prev) => prev.filter((playlist) => playlist.id !== playlistId));
-  };
+  const removeFromPlaylist = async (playlistId: string, trackId: string) => {
+    if (!user) return;
 
-  const getPlaylist = (playlistId: string) => {
-    return playlists.find((playlist) => playlist.id === playlistId);
+    try {
+      const userDocRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userDocRef);
+      
+      if (!docSnap.exists()) return;
+
+      const playlistIndex = playlists.findIndex(p => p.id === playlistId);
+      if (playlistIndex === -1) return;
+
+      // Create new playlist with removed song
+      const updatedPlaylist = {
+        ...playlists[playlistIndex],
+        songs: playlists[playlistIndex].songs.filter(s => s.id !== trackId),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Update local state
+      const updatedPlaylists = [...playlists];
+      updatedPlaylists[playlistIndex] = updatedPlaylist;
+      setPlaylists(updatedPlaylists);
+
+      // Update Firebase
+      await updateDoc(userDocRef, {
+        playlists: updatedPlaylists,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error removing song from playlist:', error);
+      // Revert local state if Firebase update fails
+      const docSnap = await getDoc(doc(db, 'users', user.uid));
+      if (docSnap.exists()) {
+        setPlaylists(docSnap.data().playlists || []);
+      }
+    }
   };
 
   return (
@@ -85,10 +213,9 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
       value={{
         playlists,
         createPlaylist,
+        deletePlaylist,
         addToPlaylist,
         removeFromPlaylist,
-        deletePlaylist,
-        getPlaylist,
       }}
     >
       {children}
@@ -99,7 +226,7 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
 export function usePlaylist() {
   const context = useContext(PlaylistContext);
   if (!context) {
-    throw new Error("usePlaylist must be used within a PlaylistProvider");
+    throw new Error('usePlaylist must be used within a PlaylistProvider');
   }
   return context;
 } 
