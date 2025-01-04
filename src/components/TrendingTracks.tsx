@@ -139,7 +139,7 @@ export const TrendingTracks = () => {
   });
   const { playTrack } = useAudio();
   const { playlists, addToPlaylist } = usePlaylist();
-  const { addToLikedSongs, removeFromLikedSongs, isLiked } = useLikedSongs();
+  const { addToLikedSongs, removeFromLikedSongs, isLiked, isProcessing } = useLikedSongs();
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSong, setSelectedSong] = useState<any>(null);
 
@@ -156,15 +156,19 @@ export const TrendingTracks = () => {
 
   const handleLikeClick = async (e: React.MouseEvent, song: any) => {
     e.stopPropagation();
-    try {
-      const trackData = {
-        id: song.id,
-        name: song.name,
-        primaryArtists: song.primaryArtists,
-        image: song.image,
-        downloadUrl: song.downloadUrl
-      };
+    
+    const trackData = {
+      id: song.id,
+      name: song.name,
+      primaryArtists: song.primaryArtists,
+      image: song.image,
+      downloadUrl: song.downloadUrl
+    };
 
+    // Don't proceed if the track is already being processed
+    if (isProcessing(trackData.id)) return;
+
+    try {
       if (isLiked(trackData)) {
         await removeFromLikedSongs(trackData);
       } else {
@@ -374,10 +378,18 @@ export const TrendingTracks = () => {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="opacity-0 group-hover:opacity-100"
-                        onClick={() => playTrack(song, selectedAlbum)}
+                        className={cn(
+                          "opacity-0 group-hover:opacity-100",
+                          isProcessing(song.id) && "opacity-50 cursor-not-allowed"
+                        )}
+                        onClick={(e) => handleLikeClick(e, song)}
+                        disabled={isProcessing(song.id)}
                       >
-                        <Play className="h-4 w-4" />
+                        <Heart className={cn(
+                          "h-4 w-4",
+                          isLiked(song) && "fill-current text-red-500",
+                          isProcessing(song.id) && "animate-pulse"
+                        )} />
                       </Button>
                       <Button
                         size="icon"

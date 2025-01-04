@@ -36,10 +36,9 @@ export const Player = () => {
     repeatMode,
     toggleRepeat
   } = useAudio();
-  const { addToLikedSongs, removeFromLikedSongs, isLiked, isLoading } = useLikedSongs();
+  const { addToLikedSongs, removeFromLikedSongs, isLiked, isLoading, isProcessing } = useLikedSongs();
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-  const [isLiking, setIsLiking] = useState(false);
   const volumeControlRef = useRef<HTMLDivElement>(null);
 
   // Handle clicking outside volume control
@@ -72,10 +71,9 @@ export const Player = () => {
 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!currentTrack || isLiking || isLoading) return;
+    if (!currentTrack || isProcessing(currentTrack.id)) return;
     
     try {
-      setIsLiking(true);
       const trackData = {
         id: currentTrack.id,
         name: currentTrack.name,
@@ -92,8 +90,6 @@ export const Player = () => {
       }
     } catch (error) {
       console.error('Error handling like click:', error);
-    } finally {
-      setIsLiking(false);
     }
   };
 
@@ -136,15 +132,15 @@ export const Player = () => {
                   variant="ghost"
                   className={cn(
                     "h-8 w-8 hover:bg-[#2a2a2a]",
-                    (isLiking || isLoading) && "opacity-50 cursor-not-allowed"
+                    (isProcessing(currentTrack.id) || isLoading) && "opacity-50 cursor-not-allowed"
                   )}
                   onClick={handleLikeClick}
-                  disabled={isLiking || isLoading}
+                  disabled={isProcessing(currentTrack.id) || isLoading}
                 >
                   <Heart className={cn(
                     "h-4 w-4 transition-colors",
                     isLiked(currentTrack) && "fill-current text-red-500",
-                    (isLiking || isLoading) && "animate-pulse"
+                    (isProcessing(currentTrack.id) || isLoading) && "animate-pulse"
                   )} />
                 </Button>
               </>
