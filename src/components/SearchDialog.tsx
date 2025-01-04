@@ -15,8 +15,10 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  // Increase debounce time slightly to prevent too many requests
+  const debouncedSearchTerm = useDebounce(searchTerm, 400);
 
   // Reset search state when dialog closes
   useEffect(() => {
@@ -24,37 +26,69 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       setSearchTerm("");
       setSearchResults([]);
       setError(null);
+      if (abortController) {
+        abortController.abort();
+      }
     }
   }, [isOpen]);
 
   const handleSearch = useCallback(async (query: string) => {
-    if (!query) {
+    // Cancel previous request if it exists
+    if (abortController) {
+      abortController.abort();
+    }
+
+    // Clear results if query is empty
+    if (!query.trim()) {
       setSearchResults([]);
       setError(null);
+      setIsLoading(false);
       return;
     }
 
+    // Create new abort controller for this request
+    const newAbortController = new AbortController();
+    setAbortController(newAbortController);
     setIsLoading(true);
     setError(null);
 
     try {
       const results = await searchSongs(query);
-      console.log("Search results:", results); // Debug log
-      setSearchResults(results);
-    } catch (error) {
-      console.error("Error searching:", error);
-      setError("An error occurred while searching. Please try again.");
+      // Only update if this is still the current request
+      if (!newAbortController.signal.aborted) {
+        setSearchResults(results);
+        if (results.length === 0) {
+          setError("No results found for your search.");
+        }
+      }
+    } catch (error: any) {
+      if (!newAbortController.signal.aborted) {
+        console.error("Error searching:", error);
+        setError(error.message || "An error occurred while searching. Please try again.");
+        setSearchResults([]);
+      }
     } finally {
-      setIsLoading(false);
+      if (!newAbortController.signal.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
-  // Only search when the dialog is open and we have a search term
+  // Search when the debounced term changes
   useEffect(() => {
-    if (isOpen && debouncedSearchTerm) {
-      console.log("Searching for:", debouncedSearchTerm); // Debug log
+    if (isOpen && debouncedSearchTerm.trim()) {
       handleSearch(debouncedSearchTerm);
+    } else {
+      setSearchResults([]);
+      setError(null);
     }
+    
+    // Cleanup function to cancel pending requests when component unmounts
+    return () => {
+      if (abortController) {
+        abortController.abort();
+      }
+    };
   }, [debouncedSearchTerm, handleSearch, isOpen]);
 
   return (

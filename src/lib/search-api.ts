@@ -3,97 +3,77 @@ interface SearchResult {
   name: string;
   primaryArtists: string;
   image: Array<{ link: string }>;
+  downloadUrl: Array<{ link: string }>;
 }
 
 export async function searchSongs(query: string): Promise<SearchResult[]> {
   if (!query) return [];
 
-  try {
-    // Fetch from multiple endpoints with pagination
-    const [songsResponse, albumsResponse, playlistsResponse] = await Promise.all([
-      fetch(
-        `https://jiosaavn-api-privatecvc2.vercel.app/search/songs?query=${encodeURIComponent(query)}&page=1&limit=20`
-      ),
-      fetch(
-        `https://jiosaavn-api-privatecvc2.vercel.app/search/albums?query=${encodeURIComponent(query)}&page=1&limit=10`
-      ),
-      fetch(
-        `https://jiosaavn-api-privatecvc2.vercel.app/search/playlists?query=${encodeURIComponent(query)}&page=1&limit=5`
-      ),
-    ]);
+  const apiUrl = `https://jiosaavn-api.vercel.app/search?query=${encodeURIComponent(query)}`;
+  console.log('Fetching from URL:', apiUrl);
 
-    if (!songsResponse.ok || !albumsResponse.ok || !playlistsResponse.ok) {
-      throw new Error("Failed to fetch search results");
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      mode: 'cors'
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Response not OK:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      throw new Error(`Failed to fetch search results: ${response.status} ${response.statusText}`);
     }
 
-    const [songsData, albumsData, playlistsData] = await Promise.all([
-      songsResponse.json(),
-      albumsResponse.json(),
-      playlistsResponse.json(),
-    ]);
+    const data = await response.json();
+    console.log('API Response data:', JSON.stringify(data, null, 2));
 
-    // Process songs
-    const songs = songsData.data?.results || [];
+    if (!data || !Array.isArray(data.results)) {
+      console.error('Unexpected API response structure:', JSON.stringify(data, null, 2));
+      throw new Error("Invalid response format from server");
+    }
 
-    // Process albums and fetch their songs
-    const albumSongs = await Promise.all(
-      (albumsData.data?.results || []).map(async (album: any) => {
-        try {
-          const albumResponse = await fetch(
-            `https://jiosaavn-api-privatecvc2.vercel.app/albums?id=${album.id}`
-          );
-          if (!albumResponse.ok) return [];
-          const albumData = await albumResponse.json();
-          return (albumData.data.songs || []).map((song: any) => ({
-            ...song,
-            albumInfo: {
-              name: album.name,
-              id: album.id,
-            },
-          }));
-        } catch (error) {
-          console.error("Error fetching album songs:", error);
-          return [];
-        }
-      })
-    );
+    // Map the response to match our interface
+    const songs = data.results.map((song: any) => {
+      // Extract the highest quality image URL
+      const imageUrls = song.images || {};
+      const highestQualityImage = 
+        imageUrls['500x500'] || 
+        imageUrls['150x150'] || 
+        imageUrls['50x50'] || 
+        song.image || // Fallback to direct image URL if available
+        'https://i.imgur.com/QxoJ9Co.png';
 
-    // Process playlists and fetch their songs
-    const playlistSongs = await Promise.all(
-      (playlistsData.data?.results || []).map(async (playlist: any) => {
-        try {
-          const playlistResponse = await fetch(
-            `https://jiosaavn-api-privatecvc2.vercel.app/playlists?id=${playlist.id}`
-          );
-          if (!playlistResponse.ok) return [];
-          const playlistData = await playlistResponse.json();
-          return (playlistData.data.songs || []).map((song: any) => ({
-            ...song,
-            playlistInfo: {
-              name: playlist.name,
-              id: playlist.id,
-            },
-          }));
-        } catch (error) {
-          console.error("Error fetching playlist songs:", error);
-          return [];
-        }
-      })
-    );
+      // Extract download URL from more_info if available
+      const downloadUrl = song.more_info?.vlink || '';
 
-    // Combine all results and remove duplicates based on song ID
-    const allSongs = [
-      ...songs,
-      ...albumSongs.flat(),
-      ...playlistSongs.flat(),
-    ].filter(
-      (song, index, self) =>
-        song && song.id && index === self.findIndex((s) => s.id === song.id)
-    );
+      const mappedSong = {
+        id: song.id || String(Math.random()),
+        name: song.title || song.name || 'Unknown Title',
+        primaryArtists: song.more_info?.singers || song.description?.split('·')[1]?.trim() || 'Unknown Artist',
+        image: [{ link: highestQualityImage }],
+        downloadUrl: [{ link: downloadUrl }]
+      };
+      console.log('Mapped song:', mappedSong);
+      return mappedSong;
+    });
 
-    return allSongs;
+    return songs;
   } catch (error) {
-    console.error("Error searching:", error);
-    throw new Error("An error occurred while searching. Please try again.");
+    console.error("Error searching:", {
+      error,
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    throw new Error(`An error occurred while searching: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

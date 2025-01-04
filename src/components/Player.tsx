@@ -71,7 +71,6 @@ export const Player = () => {
   };
 
   const handleLikeClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
     e.stopPropagation();
     if (!currentTrack || isLiking || isLoading) return;
     
@@ -101,8 +100,8 @@ export const Player = () => {
   const VolumeIcon = volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   const handleTrackInfoClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('[role="button"]')) {
+    // Don't open fullscreen if clicking the like button
+    if ((e.target as HTMLElement).closest('button')) {
       return;
     }
     setShowFullScreen(true);
@@ -136,7 +135,7 @@ export const Player = () => {
                   size="icon"
                   variant="ghost"
                   className={cn(
-                    "h-8 w-8 hover:bg-[#2a2a2a] relative z-10",
+                    "h-8 w-8 hover:bg-[#2a2a2a]",
                     (isLiking || isLoading) && "opacity-50 cursor-not-allowed"
                   )}
                   onClick={handleLikeClick}

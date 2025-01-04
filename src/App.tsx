@@ -47,10 +47,7 @@ function AppContent() {
   }, [user]);
 
   const handleLikedSongsClick = () => {
-    setShowLikedSongs(!showLikedSongs);
-    if (likedSongs.length > 0) {
-      playQueue(likedSongs);
-    }
+    setShowLikedSongs(true);
     setShowMobileMenu(false);
   };
 
@@ -209,6 +206,7 @@ function AppContent() {
 
       {/* Search dialog */}
       <SearchDialog isOpen={showSearch} onClose={() => setShowSearch(false)} />
+      <LikedSongs isOpen={showLikedSongs} onClose={() => setShowLikedSongs(false)} />
     </div>
   );
 }
