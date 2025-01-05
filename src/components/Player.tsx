@@ -18,7 +18,8 @@ import {
   Volume,
   Download
 } from 'lucide-react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@/components/ui/visually-hidden';
 
 export const Player = () => {
   const {
@@ -296,6 +297,9 @@ export const Player = () => {
       {/* Fullscreen Player Dialog */}
       <Dialog open={showFullScreen} onOpenChange={setShowFullScreen}>
         <DialogContent className="max-w-4xl bg-gradient-to-b from-[#2a2a2a] to-[#1a1a1a] border-none text-white p-8">
+          <VisuallyHidden>
+            <DialogTitle>Now Playing: {currentTrack.name}</DialogTitle>
+          </VisuallyHidden>
           <div className="flex flex-col items-center gap-8">
             <img
               src={currentTrack.image?.[2]?.link || currentTrack.image?.[0]?.link}

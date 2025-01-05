@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Home, Search, Library, Music2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { SearchDialog } from "./SearchDialog";
 import {
   Sidebar,
@@ -19,6 +19,7 @@ const menuItems = [
 
 export function MusicSidebar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -35,11 +36,12 @@ export function MusicSidebar() {
               <SidebarMenu>
                 {menuItems.map((item) => (
                   <SidebarMenuItem key={item.label}>
-                    <SidebarMenuButton asChild>
-                      <Link to={item.path} className="flex items-center gap-2">
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.label}</span>
-                      </Link>
+                    <SidebarMenuButton
+                      onClick={() => navigate(item.path)}
+                      className="flex items-center gap-2"
+                    >
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
