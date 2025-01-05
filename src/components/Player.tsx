@@ -15,7 +15,8 @@ import {
   Shuffle,
   Heart,
   Volume1,
-  Volume
+  Volume,
+  Download
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
@@ -93,6 +94,26 @@ export const Player = () => {
     }
   };
 
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentTrack?.downloadUrl?.[4]?.link) return;
+    
+    try {
+      const response = await fetch(currentTrack.downloadUrl[4].link);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentTrack.name}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading track:', error);
+    }
+  };
+
   const VolumeIcon = volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   const handleTrackInfoClick = (e: React.MouseEvent) => {
@@ -142,6 +163,14 @@ export const Player = () => {
                     isLiked(currentTrack) && "fill-current text-red-500",
                     (isProcessing(currentTrack.id) || isLoading) && "animate-pulse"
                   )} />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 hover:bg-[#2a2a2a]"
+                  onClick={handleDownload}
+                >
+                  <Download className="h-4 w-4" />
                 </Button>
               </>
             )}
