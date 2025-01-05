@@ -4,6 +4,10 @@ interface SearchResult {
   primaryArtists: string;
   image: Array<{ link: string }>;
   downloadUrl: Array<{ link: string }>;
+  albumInfo?: {
+    name: string;
+    id: string;
+  };
 }
 
 export async function searchSongs(query: string): Promise<SearchResult[]> {
@@ -44,24 +48,27 @@ export async function searchSongs(query: string): Promise<SearchResult[]> {
 
     // Map the response to match our interface
     const songs = data.results.map((song: any) => {
-      // Extract the highest quality image URL
-      const imageUrls = song.images || {};
-      const highestQualityImage = 
-        imageUrls['500x500'] || 
-        imageUrls['150x150'] || 
-        imageUrls['50x50'] || 
-        song.image || // Fallback to direct image URL if available
-        'https://i.imgur.com/QxoJ9Co.png';
-
-      // Extract download URL from more_info if available
-      const downloadUrl = song.more_info?.vlink || '';
+      // Get the highest quality image
+      const imageUrl = song.images?.['500x500'] || song.images?.['150x150'] || song.images?.['50x50'] || song.image;
 
       const mappedSong = {
-        id: song.id || String(Math.random()),
-        name: song.title || song.name || 'Unknown Title',
+        id: song.id,
+        name: song.title,
         primaryArtists: song.more_info?.singers || song.description?.split('·')[1]?.trim() || 'Unknown Artist',
-        image: [{ link: highestQualityImage }],
-        downloadUrl: [{ link: downloadUrl }]
+        image: [
+          {
+            link: imageUrl
+          }
+        ],
+        downloadUrl: [
+          {
+            link: song.more_info?.vlink || ''
+          }
+        ],
+        albumInfo: song.album ? {
+          name: song.album,
+          id: song.more_info?.album_id || ''
+        } : undefined
       };
       console.log('Mapped song:', mappedSong);
       return mappedSong;

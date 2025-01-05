@@ -2,10 +2,10 @@ import { useState, useCallback, useEffect } from "react";
 import { Search, Loader2 } from "lucide-react";
 import {
   Command,
-  CommandDialog,
   CommandInput,
   CommandList,
 } from "@/components/ui/command";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useDebounce } from "../hooks/use-debounce";
 import { searchSongs } from "@/lib/search-api";
 import { SearchResults } from "./SearchResults";
@@ -17,8 +17,8 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [error, setError] = useState<string | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
-  // Increase debounce time slightly to prevent too many requests
-  const debouncedSearchTerm = useDebounce(searchTerm, 400);
+  // Reduce debounce time for faster response
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   // Reset search state when dialog closes
   useEffect(() => {
@@ -38,14 +38,6 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       abortController.abort();
     }
 
-    // Clear results if query is empty
-    if (!query.trim()) {
-      setSearchResults([]);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
-
     // Create new abort controller for this request
     const newAbortController = new AbortController();
     setAbortController(newAbortController);
@@ -57,9 +49,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       // Only update if this is still the current request
       if (!newAbortController.signal.aborted) {
         setSearchResults(results);
-        if (results.length === 0) {
-          setError("No results found for your search.");
-        }
+        setError(results.length === 0 && query.trim() ? "No results found for your search." : null);
       }
     } catch (error: any) {
       if (!newAbortController.signal.aborted) {
@@ -76,43 +66,38 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   // Search when the debounced term changes
   useEffect(() => {
-    if (isOpen && debouncedSearchTerm.trim()) {
+    if (isOpen) {
       handleSearch(debouncedSearchTerm);
-    } else {
-      setSearchResults([]);
-      setError(null);
     }
-    
-    // Cleanup function to cancel pending requests when component unmounts
-    return () => {
-      if (abortController) {
-        abortController.abort();
-      }
-    };
   }, [debouncedSearchTerm, handleSearch, isOpen]);
 
   return (
-    <CommandDialog open={isOpen} onOpenChange={onClose}>
-      <Command className="rounded-lg border shadow-md">
-        <div className="flex items-center border-b px-3">
-          <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-          <CommandInput
-            placeholder="Search for songs, albums, or artists..."
-            value={searchTerm}
-            onValueChange={setSearchTerm}
-            className="h-14 text-lg"
-          />
-          {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-        </div>
-        <CommandList className="h-[80vh]">
-          <SearchResults
-            results={searchResults}
-            error={error}
-            searchTerm={debouncedSearchTerm}
-            onSelect={onClose}
-          />
-        </CommandList>
-      </Command>
-    </CommandDialog>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl p-0 gap-0">
+        <Command className="rounded-lg border-none bg-[#1a1a1a] text-white">
+          <div className="flex items-center border-b border-[#2a2a2a] px-3">
+            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+            <CommandInput
+              placeholder="Search for songs, albums, or artists..."
+              value={searchTerm}
+              onValueChange={setSearchTerm}
+              className="h-14 text-lg bg-transparent text-white placeholder:text-gray-400"
+            />
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+          </div>
+          <CommandList className="max-h-[500px] overflow-y-auto py-2">
+            <span id="search-description" className="sr-only">
+              Search for songs, albums, or artists and use arrow keys to navigate results
+            </span>
+            <SearchResults
+              results={searchResults}
+              error={error}
+              searchTerm={debouncedSearchTerm}
+              onSelect={onClose}
+            />
+          </CommandList>
+        </Command>
+      </DialogContent>
+    </Dialog>
   );
 };
