@@ -10,6 +10,7 @@ import { useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLikedSongs } from "@/contexts/LikedSongsContext";
 import { cn } from "@/lib/utils";
+import { Track } from "@/lib/types";
 
 const fetchContent = async () => {
   try {
@@ -24,7 +25,7 @@ const fetchContent = async () => {
     }
 
     const trendingData = await trendingResponse.json();
-    
+
     // Process trending albums and fetch their songs
     const trendingAlbums = await Promise.all(
       (trendingData.data?.trending?.albums || []).slice(0, 10).map(async (album: any) => {
@@ -57,7 +58,7 @@ const fetchContent = async () => {
     }
 
     const newData = await newResponse.json();
-    
+
     // Process new albums
     const newAlbums = await Promise.all(
       (newData.data?.albums || []).slice(0, 10).map(async (album: any) => {
@@ -90,7 +91,7 @@ const fetchContent = async () => {
     }
 
     const chartsData = await chartsResponse.json();
-    
+
     // Process top charts
     const charts = await Promise.all(
       (chartsData.data?.playlists || []).slice(0, 5).map(async (playlist: any) => {
@@ -156,7 +157,7 @@ export const TrendingTracks = () => {
 
   const handleLikeClick = async (e: React.MouseEvent, song: any) => {
     e.stopPropagation();
-    
+
     const trackData = {
       id: song.id,
       name: song.name,
@@ -164,6 +165,8 @@ export const TrendingTracks = () => {
       image: song.image,
       downloadUrl: song.downloadUrl
     };
+
+
 
     // Don't proceed if the track is already being processed
     if (isProcessing(trackData.id)) return;
@@ -178,6 +181,18 @@ export const TrendingTracks = () => {
       console.error('Error handling like click:', error);
     }
   };
+
+  const handleSongClick = async (song: any) => {
+    console.log('in here this is my song', song)
+    const trackData: Track = {
+      id: song.id,
+      name: song.name,
+      primaryArtists: song.primaryArtists,
+      image: song.image,
+      downloadUrl: song.downloadUrl
+    };
+    playTrack(trackData)
+  }
 
   if (isLoading) {
     return (
@@ -276,7 +291,7 @@ export const TrendingTracks = () => {
                     />
                     <Button
                       size="icon"
-                      className="absolute bottom-6 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
+                      className="absolute bottom-6  right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white"
                       onClick={(e) => {
                         e.stopPropagation();
                         playTrack(album.songs[0], album);
@@ -360,48 +375,52 @@ export const TrendingTracks = () => {
               </DialogHeader>
 
               <div className="mt-6 space-y-1">
-                {selectedAlbum.songs.map((song: any, index: number) => (
-                  <div
-                    key={song.id}
-                    className="flex items-center gap-4 p-2 rounded-md hover:bg-[#2a2a2a] group"
-                  >
-                    <div className="w-8 text-center text-sm text-muted-foreground">
-                      {index + 1}
+                {selectedAlbum.songs.map((song: any, index: number) => {
+                  console.log("my song", song)
+                  return (
+                    <div
+                      key={song.id}
+                      onClick={() => handleSongClick(song)}
+                      className="flex items-center cursor-pointer gap-4 p-2 rounded-md hover:bg-[#2a2a2a] group"
+                    >
+                      <div className="w-8 text-center text-sm text-muted-foreground">
+                        {index + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium truncate text-sm">{song.name}</h4>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {song.primaryArtists}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className={cn(
+                            "opacity-0 group-hover:opacity-100",
+                            isProcessing(song.id) && "opacity-50 cursor-not-allowed"
+                          )}
+                          onClick={(e) => handleLikeClick(e, song)}
+                          disabled={isProcessing(song.id)}
+                        >
+                          <Heart className={cn(
+                            "h-4 w-4",
+                            isLiked(song) && "fill-current text-red-500",
+                            isProcessing(song.id) && "animate-pulse"
+                          )} />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="opacity-0 group-hover:opacity-100"
+                          onClick={() => setSelectedSong(song)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium truncate text-sm">{song.name}</h4>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {song.primaryArtists}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className={cn(
-                          "opacity-0 group-hover:opacity-100",
-                          isProcessing(song.id) && "opacity-50 cursor-not-allowed"
-                        )}
-                        onClick={(e) => handleLikeClick(e, song)}
-                        disabled={isProcessing(song.id)}
-                      >
-                        <Heart className={cn(
-                          "h-4 w-4",
-                          isLiked(song) && "fill-current text-red-500",
-                          isProcessing(song.id) && "animate-pulse"
-                        )} />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="opacity-0 group-hover:opacity-100"
-                        onClick={() => setSelectedSong(song)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </>
           )}

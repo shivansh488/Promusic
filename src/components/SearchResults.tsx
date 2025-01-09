@@ -68,7 +68,7 @@ export const SearchResults = ({ results, error, searchTerm, onSelect }: SearchRe
           <div
             key={song.id}
             className="flex items-center gap-4 p-4 cursor-pointer group"
-            onSelect={() => {
+            onClick={() => {
               playTrack(song);
               onSelect();
             }}

@@ -55,6 +55,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     try {
       const results = await searchSongs(query);
       // Only update if this is still the current request
+      console.log('this is the result,', results)
       if (!newAbortController.signal.aborted) {
         setSearchResults(results);
         if (results.length === 0) {
