@@ -7,8 +7,8 @@ import { Track } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface LikedSongsProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
 export const LikedSongs = ({ isOpen, onClose }: LikedSongsProps) => {
@@ -57,7 +57,8 @@ export const LikedSongs = ({ isOpen, onClose }: LikedSongsProps) => {
             {likedSongs.map((song) => (
               <div
                 key={song.id}
-                className="flex items-center gap-2 p-2 rounded-md hover:bg-[#2a2a2a] group"
+                onClick={() => playTrack(song)} // Correct callback function syntax
+                className="flex cursor-pointer items-center gap-2 p-2 rounded-md hover:bg-[#2a2a2a] group"
               >
                 <img
                   src={song.image?.[2]?.link || song.image?.[0]?.link}
@@ -98,6 +99,6 @@ export const LikedSongs = ({ isOpen, onClose }: LikedSongsProps) => {
           </div>
         </ScrollArea>
       </DialogContent>
-    </Dialog>
+    </Dialog >
   );
 };

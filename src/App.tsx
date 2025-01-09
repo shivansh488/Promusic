@@ -146,7 +146,7 @@ function AppContent() {
           </Button>
         </div>
         {showLibrary && <Library />}
-        {showLikedSongs && <LikedSongs />}
+        {showLikedSongs && <LikedSongs  />}
       </div>
     </div>
   );
@@ -154,7 +154,7 @@ function AppContent() {
   return (
     <div className="h-screen flex flex-col bg-black text-white">
       {!user && <SignInOverlay />}
-      
+
       {/* Top Bar */}
       <div className="lg:h-16 h-14 bg-[#1a1a1a] fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4">
         {/* Left Side - Menu Button (Mobile Only) */}
@@ -188,7 +188,7 @@ function AppContent() {
             onClick={() => setShowMobileMenu(false)}
           />
         )}
-        
+
         <Sidebar />
 
         {/* Main content */}
