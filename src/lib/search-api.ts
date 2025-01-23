@@ -22,23 +22,16 @@ export async function searchSongs(query: string): Promise<SearchResult[]> {
     });
 
     console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Response not OK:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      });
       throw new Error(`Failed to fetch search results: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('API Response data:', JSON.stringify(data, null, 2));
-
+    console.log('Raw API response:', data);
+    
     if (!data || !Array.isArray(data.results)) {
-      console.error('Unexpected API response structure:', JSON.stringify(data, null, 2));
+      console.error('Unexpected API response structure:', data);
       throw new Error("Invalid response format from server");
     }
 
@@ -49,31 +42,32 @@ export async function searchSongs(query: string): Promise<SearchResult[]> {
       const highestQualityImage = 
         imageUrls['500x500'] || 
         imageUrls['150x150'] || 
-        imageUrls['50x50'] || 
-        song.image || // Fallback to direct image URL if available
+        Object.values(imageUrls)[0] || 
+        song.image || // Fallback to direct image URL
         'https://i.imgur.com/QxoJ9Co.png';
 
-      // Extract download URL from more_info if available
-      const downloadUrl = song.more_info?.vlink || '';
+      // Extract artists
+      const artists = song.more_info?.singers || 
+                     song.more_info?.primary_artists || 
+                     song.artist || 
+                     'Unknown Artist';
 
-      const mappedSong = {
-        id: song.id || String(Math.random()),
+      const result = {
+        id: song.id,
         name: song.title || song.name || 'Unknown Title',
-        primaryArtists: song.more_info?.singers || song.description?.split('·')[1]?.trim() || 'Unknown Artist',
+        primaryArtists: artists,
         image: [{ link: highestQualityImage }],
-        downloadUrl: [{ link: downloadUrl }]
+        downloadUrl: [{ link: song.downloadUrl || song.more_info?.media_url || '' }]
       };
-      console.log('Mapped song:', mappedSong);
-      return mappedSong;
+
+      console.log('Mapped song:', result);
+      return result;
     });
 
+    console.log('Final results:', songs);
     return songs;
   } catch (error) {
-    console.error("Error searching:", {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    throw new Error(`An error occurred while searching: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("Error searching:", error);
+    throw error;
   }
 }

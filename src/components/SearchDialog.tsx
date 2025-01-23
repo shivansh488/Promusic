@@ -10,7 +10,12 @@ import { useDebounce } from "../hooks/use-debounce";
 import { searchSongs } from "@/lib/search-api";
 import { SearchResults } from "./SearchResults";
 
-export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+interface SearchDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +27,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   // Reset search state when dialog closes
   useEffect(() => {
-    if (!isOpen) {
+    if (!open) {
       setSearchTerm("");
       setSearchResults([]);
       setError(null);
@@ -30,7 +35,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         abortController.abort();
       }
     }
-  }, [isOpen]);
+  }, [open]);
 
   const handleSearch = useCallback(async (query: string) => {
     // Cancel previous request if it exists
@@ -55,7 +60,6 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     try {
       const results = await searchSongs(query);
       // Only update if this is still the current request
-      console.log('this is the result,', results)
       if (!newAbortController.signal.aborted) {
         setSearchResults(results);
         if (results.length === 0) {
@@ -77,7 +81,7 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
   // Search when the debounced term changes
   useEffect(() => {
-    if (isOpen && debouncedSearchTerm.trim()) {
+    if (open && debouncedSearchTerm.trim()) {
       handleSearch(debouncedSearchTerm);
     } else {
       setSearchResults([]);
@@ -90,10 +94,10 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         abortController.abort();
       }
     };
-  }, [debouncedSearchTerm, handleSearch, isOpen]);
+  }, [debouncedSearchTerm, handleSearch, open]);
 
   return (
-    <CommandDialog open={isOpen} onOpenChange={onClose}>
+    <CommandDialog open={open} onOpenChange={onOpenChange}>
       <Command className="rounded-lg border shadow-md">
         <div className="flex items-center border-b px-3">
           <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
@@ -101,16 +105,16 @@ export const SearchDialog = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             placeholder="Search for songs, albums, or artists..."
             value={searchTerm}
             onValueChange={setSearchTerm}
-            className="h-14 text-lg"
+            className="h-11 text-base"
           />
           {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
         </div>
-        <CommandList className="h-[80vh]">
+        <CommandList className="max-h-[500px] overflow-y-auto">
           <SearchResults
             results={searchResults}
             error={error}
             searchTerm={debouncedSearchTerm}
-            onSelect={onClose}
+            onSelect={() => onOpenChange(false)}
           />
         </CommandList>
       </Command>

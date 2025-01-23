@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSpotify } from "@/contexts/SpotifyContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,11 +11,21 @@ import { LogOut } from "lucide-react";
 
 export function Auth() {
   const { user, signInWithGoogle, signOut } = useAuth();
+  const { spotifyToken, connectSpotify } = useSpotify();
 
   if (!user) return null;
 
   return (
     <div className="flex items-center gap-2">
+      {!spotifyToken && (
+        <Button 
+          onClick={connectSpotify}
+          className="bg-[#1DB954] hover:bg-[#1ed760] text-white"
+          size="sm"
+        >
+          Connect Spotify
+        </Button>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
