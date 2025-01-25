@@ -53,7 +53,7 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
 
   const togglePlay = useCallback(() => {
     if (!currentTrack) return;
-    
+      console.log('reached herer',)
     if (isPlaying) {
       audioRef.current?.pause();
     } else {

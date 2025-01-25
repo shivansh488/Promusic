@@ -63,6 +63,7 @@ export const SearchResults = ({ results, error, searchTerm, onSelect }: SearchRe
 
   const handlePlayTrack = (song: SearchResult) => {
     if (!song.downloadUrl?.[0]?.link) {
+      // link is always coming to be empty string
       toast.error("This song is not available for playback");
       return;
     }
@@ -71,12 +72,12 @@ export const SearchResults = ({ results, error, searchTerm, onSelect }: SearchRe
   };
 
   return (
-    <CommandGroup>
+    <div>
       {results.map((song) => (
-        <CommandItem
+        <div
           key={song.id}
-          onSelect={() => handlePlayTrack(song)}
-          className="flex items-center gap-4 p-4 cursor-pointer"
+          onClick={() => handlePlayTrack(song)}
+          className="flex items-center gap-4 hover:bg-slate-900 p-4 cursor-pointer"
         >
           <img
             src={song.image[0]?.link || 'https://i.imgur.com/QxoJ9Co.png'}
@@ -111,8 +112,8 @@ export const SearchResults = ({ results, error, searchTerm, onSelect }: SearchRe
               <Heart className="h-5 w-5" fill={isLiked(song) ? "currentColor" : "none"} />
             </button>
           )}
-        </CommandItem>
+        </div>
       ))}
-    </CommandGroup>
+    </div>
   );
 };
