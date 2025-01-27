@@ -9,7 +9,8 @@ interface SearchResult {
 export async function searchSongs(query: string): Promise<SearchResult[]> {
   if (!query) return [];
 
-  const apiUrl = `https://jiosaavn-api.vercel.app/search?query=${encodeURIComponent(query)}`;
+  // Using local JioSaavnAPI server
+  const apiUrl = `http://localhost:5100/song/?query=${encodeURIComponent(query)}`;
   console.log('Fetching from URL:', apiUrl);
 
   try {
@@ -37,31 +38,19 @@ export async function searchSongs(query: string): Promise<SearchResult[]> {
     const data = await response.json();
     console.log('API Response data:', JSON.stringify(data, null, 2));
 
-    if (!data || !Array.isArray(data.results)) {
+    if (!Array.isArray(data)) {
       console.error('Unexpected API response structure:', JSON.stringify(data, null, 2));
       throw new Error("Invalid response format from server");
     }
 
     // Map the response to match our interface
-    const songs = data.results.map((song: any) => {
-      // Extract the highest quality image URL
-      const imageUrls = song.images || {};
-      const highestQualityImage = 
-        imageUrls['500x500'] || 
-        imageUrls['150x150'] || 
-        imageUrls['50x50'] || 
-        song.image || // Fallback to direct image URL if available
-        'https://i.imgur.com/QxoJ9Co.png';
-
-      // Extract download URL from more_info if available
-      const downloadUrl = song.more_info?.vlink || '';
-
+    const songs = data.map((song: any) => {
       const mappedSong = {
         id: song.id || String(Math.random()),
-        name: song.title || song.name || 'Unknown Title',
-        primaryArtists: song.more_info?.singers || song.description?.split('·')[1]?.trim() || 'Unknown Artist',
-        image: [{ link: highestQualityImage }],
-        downloadUrl: [{ link: downloadUrl }]
+        name: song.song || song.title || 'Unknown Title',
+        primaryArtists: song.singers || song.primary_artists || 'Unknown Artist',
+        image: [{ link: song.image || 'https://i.imgur.com/QxoJ9Co.png' }],
+        downloadUrl: [{ link: song.media_url || '' }]
       };
       console.log('Mapped song:', mappedSong);
       return mappedSong;
