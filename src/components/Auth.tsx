@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut } from "lucide-react";
 
-export function Auth() {
+      export function Auth() {
   const { user, signInWithGoogle, signOut } = useAuth();
 
   if (!user) return null;
