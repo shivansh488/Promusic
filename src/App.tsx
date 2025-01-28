@@ -2,6 +2,7 @@ import { AudioProvider } from "@/contexts/AudioContext";
 import { PlaylistProvider } from "@/contexts/PlaylistContext";
 import { LikedSongsProvider } from "@/contexts/LikedSongsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { SpotifyProvider } from "@/contexts/SpotifyContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TrendingTracks } from "@/components/TrendingTracks";
 import { Player } from "@/components/Player";
@@ -218,7 +219,9 @@ function App() {
         <AudioProvider>
           <PlaylistProvider>
             <LikedSongsProvider>
-              <AppContent />
+              <SpotifyProvider>
+                <AppContent />
+              </SpotifyProvider>
             </LikedSongsProvider>
           </PlaylistProvider>
         </AudioProvider>
