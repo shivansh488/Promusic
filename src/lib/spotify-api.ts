@@ -1,4 +1,5 @@
 const SPOTIFY_API_URL = 'https://api.spotify.com/v1';
+const ITEMS_PER_REQUEST = 50; // Maximum allowed by Spotify API
 
 export interface SpotifyPlaylist {
   id: string;
@@ -26,15 +27,32 @@ export const fetchSpotifyPlaylists = async (accessToken: string): Promise<Spotif
 };
 
 export const fetchSpotifyLikedSongs = async (accessToken: string) => {
-  const response = await fetch(`${SPOTIFY_API_URL}/me/tracks`, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  const data = await response.json();
-  return data.items.map((item: any) => ({
-    id: item.track.id,
-    name: item.track.name,
-    primaryArtists: item.track.artists.map((artist: any) => artist.name).join(', '),
-  }));
+  let allTracks: any[] = [];
+  let offset = 0;
+  let total = Infinity;
+
+  while (offset < total) {
+    const response = await fetch(
+      `${SPOTIFY_API_URL}/me/tracks?limit=${ITEMS_PER_REQUEST}&offset=${offset}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    const data = await response.json();
+    total = data.total;
+    
+    const tracks = data.items.map((item: any) => ({
+      id: item.track.id,
+      name: item.track.name,
+      primaryArtists: item.track.artists.map((artist: any) => artist.name).join(', '),
+    }));
+
+    allTracks = [...allTracks, ...tracks];
+    offset += ITEMS_PER_REQUEST;
+  }
+
+  return allTracks;
 };

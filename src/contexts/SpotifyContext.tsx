@@ -3,6 +3,7 @@ import { fetchSpotifyPlaylists, fetchSpotifyLikedSongs, SpotifyPlaylist } from '
 
 interface SpotifyContextType {
   isConnected: boolean;
+  isLoading: boolean;
   connect: () => void;
   disconnect: () => void;
   playlists: SpotifyPlaylist[];
@@ -17,6 +18,7 @@ export const SpotifyProvider = ({ children }: { children: React.ReactNode }) => 
   const [playlists, setPlaylists] = useState<SpotifyPlaylist[]>([]);
   const [likedSongs, setLikedSongs] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Function to extract token from URL hash
   const processAuthResponse = (hash: string) => {
@@ -61,15 +63,28 @@ export const SpotifyProvider = ({ children }: { children: React.ReactNode }) => 
   }, []);
 
   useEffect(() => {
-    if (accessToken) {
-      fetchSpotifyPlaylists(accessToken)
-        .then(setPlaylists)
-        .catch(() => setError('Failed to fetch playlists'));
-      
-      fetchSpotifyLikedSongs(accessToken)
-        .then(setLikedSongs)
-        .catch(() => setError('Failed to fetch liked songs'));
-    }
+    const fetchData = async () => {
+      if (accessToken) {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const [playlistsData, likedSongsData] = await Promise.all([
+            fetchSpotifyPlaylists(accessToken),
+            fetchSpotifyLikedSongs(accessToken)
+          ]);
+          
+          setPlaylists(playlistsData);
+          setLikedSongs(likedSongsData);
+        } catch (err) {
+          setError('Failed to fetch Spotify data');
+          console.error('Spotify fetch error:', err);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchData();
   }, [accessToken]);
 
   const connect = () => {
@@ -99,6 +114,7 @@ export const SpotifyProvider = ({ children }: { children: React.ReactNode }) => 
     <SpotifyContext.Provider
       value={{
         isConnected: !!accessToken,
+        isLoading,
         connect,
         disconnect,
         playlists,

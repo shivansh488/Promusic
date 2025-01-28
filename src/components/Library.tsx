@@ -13,7 +13,7 @@ import { mapJioSaavnToAppFormat } from "@/lib/song-mapper";
 export const Library = () => {
   const { playlists, createPlaylist, removeFromPlaylist, deletePlaylist } = usePlaylist();
   const { playTrack } = useAudio();
-  const { isConnected, connect, disconnect, playlists: spotifyPlaylists, likedSongs, error } = useSpotify();
+  const { isConnected, connect, disconnect, playlists: spotifyPlaylists, likedSongs, error, isLoading } = useSpotify();
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [selectedPlaylist, setSelectedPlaylist] = useState<any>(null);
   const [selectedSpotifyPlaylist, setSelectedSpotifyPlaylist] = useState<any>(null);
@@ -130,7 +130,11 @@ export const Library = () => {
         <TabsContent value="spotify" className="flex-1 flex flex-col mt-0">
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-[2px]">
-              {isConnected && (
+              {isLoading ? (
+                <div className="flex items-center justify-center p-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-white"></div>
+                </div>
+              ) : isConnected && (
                 <>
                   <div
                     className="flex items-center justify-between hover:bg-[#2a2a2a] rounded-md cursor-pointer group p-2"
