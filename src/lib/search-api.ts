@@ -9,60 +9,50 @@ interface SearchResult {
 export async function searchSongs(query: string): Promise<SearchResult[]> {
   if (!query) return [];
 
-  // Using local JioSaavnAPI server
-  const apiUrl = `http://localhost:5100/song/?query=${encodeURIComponent(query)}`;
-  console.log('Fetching from URL:', apiUrl);
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5100';
+  const searchUrl = `${apiUrl}/song/?query=${encodeURIComponent(query)}`;
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetch(searchUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-      },
-      mode: 'cors'
+        'Content-Type': 'application/json'
+      }
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API Response not OK:', {
+      console.error('Search API Response:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText
+        headers: Object.fromEntries(response.headers.entries())
       });
       throw new Error(`Failed to fetch search results: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('API Response data:', JSON.stringify(data, null, 2));
 
     if (!Array.isArray(data)) {
-      console.error('Unexpected API response structure:', JSON.stringify(data, null, 2));
+      console.error('Invalid response format:', data);
       throw new Error("Invalid response format from server");
     }
 
-    // Map the response to match our interface
-    const songs = data.map((song: any) => {
-      const mappedSong = {
-        id: song.id || String(Math.random()),
-        name: song.song || song.title || 'Unknown Title',
-        primaryArtists: song.singers || song.primary_artists || 'Unknown Artist',
-        image: [{ link: song.image || 'https://i.imgur.com/QxoJ9Co.png' }],
-        downloadUrl: [{ link: song.media_url || '' }]
-      };
-      console.log('Mapped song:', mappedSong);
-      return mappedSong;
-    });
+    return data.map((song: any) => ({
+      id: song.id || String(Math.random()),
+      name: song.song || song.title || 'Unknown Title',
+      primaryArtists: song.singers || song.primary_artists || 'Unknown Artist',
+      image: song.image ? [{ 
+        link: song.image.replace('150x150', '500x500')
+      }] : [{ 
+        link: 'https://i.imgur.com/QxoJ9Co.png'
+      }],
+      downloadUrl: song.media_url ? [{
+        link: song.media_url
+      }] : []
+    }));
 
-    return songs;
   } catch (error) {
-    console.error("Error searching:", {
-      error,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
-    throw new Error(`An error occurred while searching: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("Error searching:", error);
+    throw error;
   }
 }

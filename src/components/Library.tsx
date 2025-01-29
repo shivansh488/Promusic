@@ -10,6 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mapJioSaavnToAppFormat } from "@/lib/song-mapper";
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5100';
+
 export const Library = () => {
   const { playlists, createPlaylist, removeFromPlaylist, deletePlaylist } = usePlaylist();
   const { playTrack } = useAudio();
@@ -32,19 +34,32 @@ export const Library = () => {
 
   const handlePlaySpotifySong = async (song: any) => {
     try {
-      // Use exact artist name and song title for better search results
       const searchQuery = `${song.name} ${song.primaryArtists}`;
-      const response = await fetch(`http://localhost:5100/song/?query=${encodeURIComponent(searchQuery)}`);
+      console.log('Searching for:', searchQuery);
       
+      const response = await fetch(`${API_URL}/song/?query=${encodeURIComponent(searchQuery)}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
       if (!response.ok) {
-        throw new Error('Failed to search song on JioSaavn');
+        console.error('API Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        throw new Error(`Failed to search song on JioSaavn: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
-      // Find the best matching song from results
+      console.log('Search result:', data);
+
       if (data && Array.isArray(data) && data.length > 0) {
         const matchedSong = mapJioSaavnToAppFormat(data[0]);
+        console.log('Matched song:', matchedSong);
         playTrack(matchedSong);
         setSearchError(null);
       } else {
@@ -52,7 +67,7 @@ export const Library = () => {
       }
     } catch (error) {
       console.error('Error playing song:', error);
-      setSearchError('Error searching for song on JioSaavn');
+      setSearchError(error instanceof Error ? error.message : 'Error searching for song');
     }
   };
 
