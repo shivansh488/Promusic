@@ -9,8 +9,8 @@ import { LikedSongs } from "@/components/LikedSongs";
 type SidebarProps = {
   showMobileMenu: boolean;
   setShowMobileMenu: (show: boolean) => void;
-  currentSection: 'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore';
-  setCurrentSection: (section: 'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore') => void;
+  currentSection: 'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore' | 'library';
+  setCurrentSection: (section: 'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore' | 'library') => void;
   setShowSearch: (show: boolean) => void;
   setShowLikedSongs: (show: boolean) => void;
 };

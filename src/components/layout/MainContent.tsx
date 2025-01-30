@@ -4,7 +4,7 @@ import { ExplorePage } from "@/pages/ExplorePage";
 import { LibraryPage } from "@/pages/LibraryPage";
 
 type MainContentProps = {
-  currentSection: 'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore';
+  currentSection: 'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore' | 'library';
 };
 
 export const MainContent = ({ currentSection }: MainContentProps) => {
