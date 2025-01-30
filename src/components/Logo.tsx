@@ -1,34 +1,27 @@
-import { useState } from 'react';
-import logoImage from '../../logo.png';
-
 export function Logo({ className = "" }: { className?: string }) {
-  const [imageError, setImageError] = useState(false);
-
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 p-[2px]">
-        <div className="w-full h-full rounded-full overflow-hidden bg-[#1a1a1a] flex items-center justify-center">
-          {!imageError ? (
-            <img
-              src={logoImage}
-              alt="ProMusic Logo"
-              className="w-full h-full object-contain p-1"
-              onError={() => {
-                console.error('Logo image failed to load');
-                setImageError(true);
-              }}
+    <div className={`flex items-center gap-2 ${className}`}>
+      <div className="w-8 h-8 relative">
+        <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg" />
+        <div className="relative w-full h-full bg-gradient-to-br from-primary to-primary/50 rounded-full flex items-center justify-center">
+          <svg
+            viewBox="0 0 24 24"
+            className="w-5 h-5 text-white"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
             />
-          ) : (
-            // Fallback content if image fails to load
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500">
-              <span className="text-white font-bold text-lg">P</span>
-            </div>
-          )}
+          </svg>
         </div>
       </div>
-      <span className="text-lg font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-        ProMusic
+      <span className="text-lg font-bold text-white">
+        Musium
       </span>
     </div>
   );
-} 
+}

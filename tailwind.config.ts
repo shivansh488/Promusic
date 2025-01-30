@@ -22,10 +22,10 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        background: "#000000",
+        foreground: "#ffffff",
         primary: {
-          DEFAULT: "#fa586a",
+          DEFAULT: "#00e5cc",
           foreground: "#ffffff",
         },
         secondary: {
@@ -72,6 +72,9 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
       },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+      }
     },
   },
   plugins: [require("tailwindcss-animate")],
