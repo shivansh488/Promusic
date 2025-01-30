@@ -139,7 +139,7 @@ export const TrendingTracks = () => {
     retry: 3,
     staleTime: 5 * 60 * 1000,
   });
-  const { addToPlaylist } = usePlaylist();
+  const { playlists, addToPlaylist } = usePlaylist();
   const { addToLikedSongs, removeFromLikedSongs, isLiked, isProcessing } = useLikedSongs();
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedSong, setSelectedSong] = useState<any>(null);
