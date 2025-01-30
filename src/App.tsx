@@ -50,7 +50,7 @@ function AppContent() {
 
       <TopBar setShowMobileMenu={setShowMobileMenu} />
 
-      <div className="flex-1 flex overflow-hidden lg:pt-16 pt-14 pb-[90px]">
+      <div className="flex-1 flex overflow-hidden lg:pt-16 pt-14 pb-[140px] lg:pb-[90px]">
         {showMobileMenu && (
           <div
             className="fixed inset-0 bg-black/50 z-30 lg:hidden"
@@ -70,8 +70,33 @@ function AppContent() {
         <MainContent currentSection={currentSection} />
       </div>
 
-      <div className="h-[90px] border-t border-[#2a2a2a] bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-40">
-        <Player />
+      <div className="fixed bottom-0 left-0 right-0 z-40">
+        <div className="h-[90px] border-t border-[#2a2a2a] bg-[#1a1a1a]">
+          <Player />
+        </div>
+        <div className="lg:hidden h-[50px] bg-[#1a1a1a] border-t border-[#2a2a2a] flex items-center justify-around">
+          <button 
+            onClick={() => setCurrentSection('home')}
+            className={`flex flex-col items-center text-xs ${currentSection === 'home' ? 'text-primary' : 'text-white'}`}
+          >
+            <span className="material-icons text-lg mb-1">home</span>
+            Home
+          </button>
+          <button 
+            onClick={() => setCurrentSection('explore')}
+            className={`flex flex-col items-center text-xs ${currentSection === 'explore' ? 'text-primary' : 'text-white'}`}
+          >
+            <span className="material-icons text-lg mb-1">explore</span>
+            Explore
+          </button>
+          <button 
+            onClick={() => setCurrentSection('library')}
+            className={`flex flex-col items-center text-xs ${currentSection === 'library' ? 'text-primary' : 'text-white'}`}
+          >
+            <span className="material-icons text-lg mb-1">library_music</span>
+            Library
+          </button>
+        </div>
       </div>
 
       <SearchDialog isOpen={showSearch} onClose={() => setShowSearch(false)} />
