@@ -20,7 +20,7 @@ function AppContent() {
   const [showSearch, setShowSearch] = useState(false);
   const [showLikedSongs, setShowLikedSongs] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [currentSection, setCurrentSection] = useState<'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore'>('home');
+  const [currentSection, setCurrentSection] = useState<'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore' | 'library'>('home');
   const { user, loading } = useAuth();
 
   useEffect(() => {
