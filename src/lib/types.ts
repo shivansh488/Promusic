@@ -4,4 +4,12 @@ export interface Track {
   primaryArtists: string;
   image: Array<{ link: string }>;
   downloadUrl: Array<{ link: string }>;
-} 
+  albumInfo?: {
+    name: string;
+    id: string;
+  };
+  playlistInfo?: {
+    name: string;
+    id: string;
+  };
+}
