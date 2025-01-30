@@ -4,44 +4,30 @@ import { LikedSongsProvider } from "@/contexts/LikedSongsContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SpotifyProvider } from "@/contexts/SpotifyContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TrendingTracks } from "@/components/TrendingTracks";
 import { Player } from "@/components/Player";
 import { SearchDialog } from "@/components/SearchDialog";
-import { Library } from "@/components/Library";
 import { LikedSongs } from "@/components/LikedSongs";
-import { Auth } from "@/components/Auth";
 import { SignInOverlay } from "@/components/SignInOverlay";
-import { Logo } from "@/components/Logo";
-import { Button } from "@/components/ui/button";
-import { Search, Home, Radio, Library as LibraryIcon, Heart, Menu, X, Disc, Music, Compass } from "lucide-react";
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { useAudio } from "@/contexts/AudioContext";
-import { useLikedSongs } from "@/contexts/LikedSongsContext";
 import { useAuth } from "@/contexts/AuthContext";
-import Albums from "@/pages/Albums";
-import Songs from "@/pages/Songs";
-import Explore from "@/pages/Explore";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { TopBar } from "@/components/layout/TopBar";
+import { MainContent } from "@/components/layout/MainContent";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const [showSearch, setShowSearch] = useState(false);
-  const [showLibrary, setShowLibrary] = useState(false);
   const [showLikedSongs, setShowLikedSongs] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [currentSection, setCurrentSection] = useState<'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore'>('home');
-  const { playQueue } = useAudio();
-  const { likedSongs } = useLikedSongs();
   const { user, loading } = useAuth();
 
-  // Add keyboard shortcut handler
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!user) return; // Disable shortcuts when not signed in
-      // Check for Ctrl + Q (or Cmd + Q on Mac)
+      if (!user) return;
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'q') {
-        event.preventDefault(); // Prevent default browser behavior
+        event.preventDefault();
         setShowSearch(true);
       }
     };
@@ -49,11 +35,6 @@ function AppContent() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [user]);
-
-  const handleLikedSongsClick = () => {
-    setShowLikedSongs(true);
-    setShowMobileMenu(false);
-  };
 
   if (loading) {
     return (
@@ -63,150 +44,12 @@ function AppContent() {
     );
   }
 
-  const Sidebar = () => (
-    <div className={cn(
-      "lg:w-[240px] bg-[#1a1a1a] flex flex-col",
-      "fixed inset-y-0 left-0 z-40 w-[80%] lg:relative",
-      "transform transition-transform duration-300 ease-in-out",
-      !showMobileMenu && "lg:translate-x-0 -translate-x-full"
-    )}>
-      <div className="flex items-center justify-between p-4">
-        <Logo />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="lg:hidden"
-          onClick={() => setShowMobileMenu(false)}
-        >
-          <X className="h-5 w-5" />
-        </Button>
-      </div>
-      <div className="p-2 space-y-1 flex-1 overflow-y-auto">
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-2 text-sm font-medium",
-            currentSection === 'home' && "bg-[#2a2a2a]"
-          )}
-          onClick={() => {
-            setCurrentSection('home');
-            setShowMobileMenu(false);
-          }}
-        >
-          <Home className="h-4 w-4" />
-          Home
-        </Button>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-2 text-sm font-medium",
-            currentSection === 'search' && "bg-[#2a2a2a]"
-          )}
-          onClick={() => {
-            setCurrentSection('search');
-            setShowSearch(true);
-            setShowMobileMenu(false);
-          }}
-        >
-          <Search className="h-4 w-4" />
-          Search
-          <kbd className="ml-auto text-xs text-muted-foreground hidden lg:inline">
-            Ctrl+Q
-          </kbd>
-        </Button>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-2 text-sm font-medium",
-            currentSection === 'explore' && "bg-[#2a2a2a]"
-          )}
-          onClick={() => {
-            setCurrentSection('explore');
-            setShowMobileMenu(false);
-          }}
-        >
-          <Compass className="h-4 w-4" />
-          Explore
-        </Button>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-2 text-sm font-medium",
-            currentSection === 'albums' && "bg-[#2a2a2a]"
-          )}
-          onClick={() => {
-            setCurrentSection('albums');
-            setShowMobileMenu(false);
-          }}
-        >
-          <Disc className="h-4 w-4" />
-          Albums
-        </Button>
-        <Button
-          variant="ghost"
-          className={cn(
-            "w-full justify-start gap-2 text-sm font-medium",
-            currentSection === 'songs' && "bg-[#2a2a2a]"
-          )}
-          onClick={() => {
-            setCurrentSection('songs');
-            setShowMobileMenu(false);
-          }}
-        >
-          <Music className="h-4 w-4" />
-          Songs
-        </Button>
-        <div className="pt-4 space-y-1">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 text-sm font-medium"
-            onClick={() => {
-              setShowLibrary(!showLibrary);
-              setShowMobileMenu(false);
-            }}
-          >
-            <LibraryIcon className="h-4 w-4" />
-            Library
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-2 text-sm font-medium"
-            onClick={handleLikedSongsClick}
-          >
-            <Heart className="h-4 w-4" />
-            Liked Songs
-          </Button>
-        </div>
-        {showLibrary && <Library />}
-        {showLikedSongs && <LikedSongs />}
-      </div>
-    </div>
-  );
-
   return (
     <div className="h-screen flex flex-col bg-black text-white">
       {!user && <SignInOverlay />}
 
-      {/* Top Bar */}
-      <div className="lg:h-16 h-14 bg-[#1a1a1a] fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4">
-        <div className="lg:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowMobileMenu(true)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-        </div>
-        <div className="lg:hidden">
-          <Logo className="!gap-2" />
-        </div>
-        <div className="ml-auto">
-          <Auth />
-        </div>
-      </div>
+      <TopBar setShowMobileMenu={setShowMobileMenu} />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden lg:pt-16 pt-14 pb-[90px]">
         {showMobileMenu && (
           <div
@@ -215,27 +58,22 @@ function AppContent() {
           />
         )}
 
-        <Sidebar />
+        <Sidebar
+          showMobileMenu={showMobileMenu}
+          setShowMobileMenu={setShowMobileMenu}
+          currentSection={currentSection}
+          setCurrentSection={setCurrentSection}
+          setShowSearch={setShowSearch}
+          setShowLikedSongs={setShowLikedSongs}
+        />
 
-        {/* Main content */}
-        <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#1a1a1a] to-black">
-          {currentSection === 'home' && (
-            <div className="p-4">
-              <TrendingTracks />
-            </div>
-          )}
-          {currentSection === 'albums' && <Albums />}
-          {currentSection === 'songs' && <Songs />}
-          {currentSection === 'explore' && <Explore />}
-        </div>
+        <MainContent currentSection={currentSection} />
       </div>
 
-      {/* Player */}
       <div className="h-[90px] border-t border-[#2a2a2a] bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-40">
         <Player />
       </div>
 
-      {/* Dialogs */}
       <SearchDialog isOpen={showSearch} onClose={() => setShowSearch(false)} />
       <LikedSongs isOpen={showLikedSongs} onClose={() => setShowLikedSongs(false)} />
     </div>
