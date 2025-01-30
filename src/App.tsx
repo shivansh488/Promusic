@@ -13,12 +13,15 @@ import { Auth } from "@/components/Auth";
 import { SignInOverlay } from "@/components/SignInOverlay";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
-import { Search, Home, Radio, Library as LibraryIcon, Heart, Menu, X } from "lucide-react";
+import { Search, Home, Radio, Library as LibraryIcon, Heart, Menu, X, Disc, Music, Compass } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { useAudio } from "@/contexts/AudioContext";
 import { useLikedSongs } from "@/contexts/LikedSongsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import Albums from "@/pages/Albums";
+import Songs from "@/pages/Songs";
+import Explore from "@/pages/Explore";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +30,7 @@ function AppContent() {
   const [showLibrary, setShowLibrary] = useState(false);
   const [showLikedSongs, setShowLikedSongs] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [currentSection, setCurrentSection] = useState<'home' | 'search' | 'radio'>('home');
+  const [currentSection, setCurrentSection] = useState<'home' | 'search' | 'radio' | 'albums' | 'songs' | 'explore'>('home');
   const { playQueue } = useAudio();
   const { likedSongs } = useLikedSongs();
   const { user, loading } = useAuth();
@@ -115,15 +118,43 @@ function AppContent() {
           variant="ghost"
           className={cn(
             "w-full justify-start gap-2 text-sm font-medium",
-            currentSection === 'radio' && "bg-[#2a2a2a]"
+            currentSection === 'explore' && "bg-[#2a2a2a]"
           )}
           onClick={() => {
-            setCurrentSection('radio');
+            setCurrentSection('explore');
             setShowMobileMenu(false);
           }}
         >
-          <Radio className="h-4 w-4" />
-          Radio
+          <Compass className="h-4 w-4" />
+          Explore
+        </Button>
+        <Button
+          variant="ghost"
+          className={cn(
+            "w-full justify-start gap-2 text-sm font-medium",
+            currentSection === 'albums' && "bg-[#2a2a2a]"
+          )}
+          onClick={() => {
+            setCurrentSection('albums');
+            setShowMobileMenu(false);
+          }}
+        >
+          <Disc className="h-4 w-4" />
+          Albums
+        </Button>
+        <Button
+          variant="ghost"
+          className={cn(
+            "w-full justify-start gap-2 text-sm font-medium",
+            currentSection === 'songs' && "bg-[#2a2a2a]"
+          )}
+          onClick={() => {
+            setCurrentSection('songs');
+            setShowMobileMenu(false);
+          }}
+        >
+          <Music className="h-4 w-4" />
+          Songs
         </Button>
         <div className="pt-4 space-y-1">
           <Button
@@ -147,7 +178,7 @@ function AppContent() {
           </Button>
         </div>
         {showLibrary && <Library />}
-        {showLikedSongs && <LikedSongs  />}
+        {showLikedSongs && <LikedSongs />}
       </div>
     </div>
   );
@@ -158,7 +189,6 @@ function AppContent() {
 
       {/* Top Bar */}
       <div className="lg:h-16 h-14 bg-[#1a1a1a] fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4">
-        {/* Left Side - Menu Button (Mobile Only) */}
         <div className="lg:hidden">
           <Button
             variant="ghost"
@@ -168,21 +198,16 @@ function AppContent() {
             <Menu className="h-5 w-5" />
           </Button>
         </div>
-
-        {/* Center - Logo (Mobile Only) */}
         <div className="lg:hidden">
           <Logo className="!gap-2" />
         </div>
-
-        {/* Right Side - Auth */}
         <div className="ml-auto">
           <Auth />
         </div>
       </div>
 
-      {/* Main Content Area with proper padding for header and player */}
+      {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden lg:pt-16 pt-14 pb-[90px]">
-        {/* Overlay for mobile menu */}
         {showMobileMenu && (
           <div
             className="fixed inset-0 bg-black/50 z-30 lg:hidden"
@@ -194,18 +219,23 @@ function AppContent() {
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#1a1a1a] to-black">
-          <div className="p-4">
-            <TrendingTracks />
-          </div>
+          {currentSection === 'home' && (
+            <div className="p-4">
+              <TrendingTracks />
+            </div>
+          )}
+          {currentSection === 'albums' && <Albums />}
+          {currentSection === 'songs' && <Songs />}
+          {currentSection === 'explore' && <Explore />}
         </div>
       </div>
 
-      {/* Player - Fixed at bottom */}
+      {/* Player */}
       <div className="h-[90px] border-t border-[#2a2a2a] bg-[#1a1a1a] fixed bottom-0 left-0 right-0 z-40">
         <Player />
       </div>
 
-      {/* Search dialog */}
+      {/* Dialogs */}
       <SearchDialog isOpen={showSearch} onClose={() => setShowSearch(false)} />
       <LikedSongs isOpen={showLikedSongs} onClose={() => setShowLikedSongs(false)} />
     </div>
