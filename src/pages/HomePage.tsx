@@ -7,6 +7,16 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useAudio } from "@/contexts/AudioContext";
 
+interface Song {
+  id: string;
+  name: string;
+  url?: string;
+  image: { link: string }[];
+  type?: string;
+  role?: string;
+  primaryArtists?: string;
+}
+
 export const HomePage = () => {
   const { user } = useAuth();
   const { playlists } = usePlaylist();
@@ -91,7 +101,7 @@ export const HomePage = () => {
                 Failed to load trending songs
               </div>
             ) : (
-              trendingSongs?.slice(0, 8).map((song: any) => (
+              trendingSongs?.slice(0, 8).map((song: Song) => (
                 <Card 
                   key={song.id} 
                   className="bg-[#1e1e1e] border-none p-3 group cursor-pointer hover:bg-[#2a2a2a] transition-colors"
