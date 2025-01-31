@@ -6,16 +6,9 @@ import { Bell, Settings, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useAudio } from "@/contexts/AudioContext";
+import { Track } from "@/lib/types";
 
-interface Song {
-  id: string;
-  name: string;
-  url?: string;
-  image: { link: string }[];
-  type?: string;
-  role?: string;
-  primaryArtists?: string;
-}
+interface Song extends Track {} // Now Song has all the required properties from Track
 
 export const HomePage = () => {
   const { user } = useAuth();
