@@ -76,9 +76,20 @@ export const HomePage = () => {
           <h2 className="text-xl font-bold mb-4">Trending Now</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {isLoading ? (
-              <p>Loading trending songs...</p>
+              Array(8).fill(null).map((_, index) => (
+                <Card 
+                  key={index}
+                  className="bg-[#1e1e1e] border-none p-3 animate-pulse"
+                >
+                  <div className="aspect-square mb-2 bg-[#2a2a2a] rounded-md" />
+                  <div className="h-4 bg-[#2a2a2a] rounded mb-2" />
+                  <div className="h-3 bg-[#2a2a2a] rounded w-2/3" />
+                </Card>
+              ))
             ) : error ? (
-              <p>Error loading trending songs</p>
+              <div className="col-span-full text-center text-red-500">
+                Failed to load trending songs
+              </div>
             ) : (
               trendingSongs?.slice(0, 8).map((song: any) => (
                 <Card 
