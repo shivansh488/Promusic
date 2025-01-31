@@ -25,7 +25,13 @@ export const HomePage = () => {
         throw new Error('Failed to fetch trending songs');
       }
       const data = await response.json();
-      return data.data?.trending?.songs || [];
+      return data.data?.trending?.songs?.map((song: any) => ({
+        id: song.id || String(Math.random()),
+        name: song.name || song.title || 'Unknown Title',
+        primaryArtists: song.primary_artists || song.singers || 'Unknown Artist',
+        image: song.image ? [{ link: song.image.replace('150x150', '500x500') }] : [{ link: 'https://i.imgur.com/QxoJ9Co.png' }],
+        downloadUrl: song.downloadUrl || song.media_url ? [{ link: song.downloadUrl || song.media_url }] : []
+      })) || [];
     }
   });
 
@@ -101,7 +107,7 @@ export const HomePage = () => {
                 >
                   <div className="relative aspect-square mb-2">
                     <img 
-                      src={song.image?.[2]?.link || song.image?.[0]?.link || "https://github.com/shadcn.png"} 
+                      src={song.image?.[0]?.link || "https://github.com/shadcn.png"} 
                       alt={song.name || "Song cover"}
                       className="w-full h-full object-cover rounded-md"
                     />
