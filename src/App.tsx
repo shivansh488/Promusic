@@ -77,24 +77,24 @@ function AppContent() {
         <div className="lg:hidden h-[50px] bg-[#1a1a1a] border-t border-[#2a2a2a] flex items-center justify-around">
           <button 
             onClick={() => setCurrentSection('home')}
-            className={`flex flex-col items-center text-xs ${currentSection === 'home' ? 'text-primary' : 'text-white'}`}
+            className={`flex flex-col items-center text-xs ${currentSection === 'home' ? 'text-primary' : 'text-white'} transition-colors`}
           >
-            <span className="material-icons text-lg mb-1">home</span>
-            Home
+            <span className="material-icons-round text-lg mb-0.5">home</span>
+            <span className="opacity-80">Home</span>
           </button>
           <button 
             onClick={() => setCurrentSection('explore')}
-            className={`flex flex-col items-center text-xs ${currentSection === 'explore' ? 'text-primary' : 'text-white'}`}
+            className={`flex flex-col items-center text-xs ${currentSection === 'explore' ? 'text-primary' : 'text-white'} transition-colors`}
           >
-            <span className="material-icons text-lg mb-1">explore</span>
-            Explore
+            <span className="material-icons-round text-lg mb-0.5">explore</span>
+            <span className="opacity-80">Explore</span>
           </button>
           <button 
             onClick={() => setCurrentSection('library')}
-            className={`flex flex-col items-center text-xs ${currentSection === 'library' ? 'text-primary' : 'text-white'}`}
+            className={`flex flex-col items-center text-xs ${currentSection === 'library' ? 'text-primary' : 'text-white'} transition-colors`}
           >
-            <span className="material-icons text-lg mb-1">library_music</span>
-            Library
+            <span className="material-icons-round text-lg mb-0.5">library_music</span>
+            <span className="opacity-80">Library</span>
           </button>
         </div>
       </div>
