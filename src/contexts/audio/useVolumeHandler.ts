@@ -2,22 +2,23 @@ import { useCallback } from 'react';
 
 export const useVolumeHandler = (
   audioRef: React.RefObject<HTMLAudioElement>,
-  wasPlayingRef: React.RefObject<boolean>,
+  wasPlayingRef: React.MutableRefObject<boolean>,
   setVolume: (volume: number) => void
 ) => {
   const handleVolumeChange = useCallback((newVolume: number) => {
     if (!audioRef.current) return;
     
     try {
-      // Store current playback state
-      wasPlayingRef.current = !audioRef.current.paused;
+      // Store current playback state using a local variable
+      const wasPlaying = !audioRef.current.paused;
+      wasPlayingRef.current = wasPlaying;
       
       // Update volume
       audioRef.current.volume = newVolume;
       setVolume(newVolume);
 
       // Resume playback if it was playing
-      if (wasPlayingRef.current && audioRef.current.paused) {
+      if (wasPlaying && audioRef.current.paused) {
         const playPromise = audioRef.current.play();
         if (playPromise !== undefined) {
           playPromise.catch(error => {
