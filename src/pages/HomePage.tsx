@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAudio } from "@/contexts/AudioContext";
 import { Track } from "@/lib/types";
 
-interface Song extends Track {} // Now Song has all the required properties from Track
+interface Song extends Track {}
 
 export const HomePage = () => {
   const { user } = useAuth();
@@ -35,123 +35,143 @@ export const HomePage = () => {
     }
   });
 
-  const recentPlaylists = [
-    {
-      title: "Coffee & Jazz",
-      image: "/lovable-uploads/coffee-jazz.jpg"
-    },
-    {
-      title: "Anything Goes",
-      image: "/lovable-uploads/anything-goes.jpg"
-    },
-    {
-      title: "Anime OSTs",
-      image: "/lovable-uploads/anime-osts.jpg"
-    },
-    {
-      title: "Lo-Fi Beats",
-      image: "/lovable-uploads/lofi-beats.jpg"
-    }
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const categories = [
+    { title: "Podcasts", icon: "🎙️" },
+    { title: "Music", icon: "🎵" },
+    { title: "ASMR", icon: "🎧" },
   ];
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-6">
+      <div className="p-6 space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <img
-              src={user?.photoURL || "https://github.com/shadcn.png"}
-              alt="Profile"
-              className="w-10 h-10 rounded-full"
-            />
-            <div>
-              <h1 className="text-xl font-bold">Welcome back!</h1>
-              <p className="text-sm text-gray-400">{user?.displayName || "Guest"}</p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-400">{getGreeting()}</p>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              {user?.displayName || "Guest"} 
+              <span role="img" aria-label="wave">👋</span>
+            </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="rounded-full">
               <Bell className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="rounded-full">
               <Settings className="w-5 h-5" />
             </Button>
           </div>
         </div>
 
-        {/* Trending Songs */}
-        <section className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Trending Now</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {/* Categories */}
+        <div className="flex justify-between gap-4">
+          {categories.map((category) => (
+            <Button
+              key={category.title}
+              variant="ghost"
+              className="flex-1 h-auto py-3 bg-white/5 hover:bg-white/10 rounded-xl"
+            >
+              <span className="text-lg mr-2">{category.icon}</span>
+              {category.title}
+            </Button>
+          ))}
+        </div>
+
+        {/* Featured Section */}
+        <div>
+          <h2 className="text-xl font-bold mb-4">Featured</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {isLoading ? (
-              Array(8).fill(null).map((_, index) => (
+              Array(3).fill(null).map((_, index) => (
                 <Card 
                   key={index}
-                  className="bg-[#1e1e1e] border-none p-3 animate-pulse"
+                  className="bg-white/5 border-none p-4 rounded-xl animate-pulse"
                 >
-                  <div className="aspect-square mb-2 bg-[#2a2a2a] rounded-md" />
-                  <div className="h-4 bg-[#2a2a2a] rounded mb-2" />
-                  <div className="h-3 bg-[#2a2a2a] rounded w-2/3" />
+                  <div className="aspect-square rounded-lg bg-white/10 mb-3" />
+                  <div className="h-4 bg-white/10 rounded mb-2" />
+                  <div className="h-3 bg-white/10 rounded w-2/3" />
                 </Card>
               ))
             ) : error ? (
               <div className="col-span-full text-center text-red-500">
-                Failed to load trending songs
+                Failed to load featured content
               </div>
             ) : (
-              trendingSongs?.slice(0, 8).map((song: Song) => (
+              trendingSongs?.slice(0, 3).map((song: Song) => (
                 <Card 
-                  key={song.id} 
-                  className="bg-[#1e1e1e] border-none p-3 group cursor-pointer hover:bg-[#2a2a2a] transition-colors"
+                  key={song.id}
+                  className="group relative overflow-hidden bg-white/5 hover:bg-white/10 transition-colors border-none rounded-xl"
                 >
-                  <div className="relative aspect-square mb-2">
+                  <div className="p-4">
+                    <div className="relative aspect-square mb-3">
+                      <img 
+                        src={song.image?.[0]?.link}
+                        alt={song.name}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <Button
+                        size="icon"
+                        className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg"
+                        onClick={() => playTrack(song)}
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <h3 className="font-medium text-sm truncate">
+                      {song.name}
+                    </h3>
+                    <p className="text-xs text-gray-400 truncate">
+                      {song.primaryArtists}
+                    </p>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* New Releases */}
+        <div>
+          <h2 className="text-xl font-bold mb-4">New Releases</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {trendingSongs?.slice(3, 7).map((song: Song) => (
+              <Card 
+                key={song.id}
+                className="group relative overflow-hidden bg-white/5 hover:bg-white/10 transition-colors border-none rounded-xl"
+              >
+                <div className="p-4">
+                  <div className="relative aspect-square mb-3">
                     <img 
-                      src={song.image?.[0]?.link || "https://github.com/shadcn.png"} 
-                      alt={song.name || "Song cover"}
-                      className="w-full h-full object-cover rounded-md"
+                      src={song.image?.[0]?.link}
+                      alt={song.name}
+                      className="w-full h-full object-cover rounded-lg"
                     />
                     <Button
                       size="icon"
-                      className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary hover:bg-primary/90 text-white"
+                      className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-primary hover:bg-primary/90 text-white rounded-full shadow-lg"
                       onClick={() => playTrack(song)}
                     >
                       <Play className="h-4 w-4" />
                     </Button>
                   </div>
                   <h3 className="font-medium text-sm truncate">
-                    {song.name || "Untitled"}
+                    {song.name}
                   </h3>
                   <p className="text-xs text-gray-400 truncate">
-                    {song.primaryArtists || "Unknown Artist"}
+                    {song.primaryArtists}
                   </p>
-                </Card>
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* Continue Listening */}
-        <section className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Continue Listening</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {recentPlaylists.map((playlist) => (
-              <Card 
-                key={playlist.title} 
-                className="bg-[#1e1e1e] border-none p-3 hover:bg-[#2a2a2a] transition-colors"
-              >
-                <div className="aspect-square mb-2 bg-[#2a2a2a] rounded-md">
-                  <img
-                    src={playlist.image}
-                    alt={playlist.title}
-                    className="w-full h-full object-cover rounded-md"
-                  />
                 </div>
-                <h3 className="font-medium text-sm">{playlist.title}</h3>
               </Card>
             ))}
           </div>
-        </section>
+        </div>
       </div>
     </ScrollArea>
   );
